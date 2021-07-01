@@ -117,6 +117,8 @@ to_format(Ts, Opts) ->
 
 
 -ifdef(TEST).
+start_test() ->
+   application:ensure_all_started(qdate).
 second_to_ms_test() ->
    ?assertEqual(1565343079000, second_to_ms(1565343079)).
 float_millisecond_to_ms_test() ->

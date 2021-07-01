@@ -8,7 +8,9 @@
     lager,
     jiffy,
     jsn,
-    msgpack
+    msgpack,
+    qdate,
+    dfs
    ]},
   {env,[]},
   {modules, []},
