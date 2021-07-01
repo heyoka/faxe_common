@@ -6,6 +6,7 @@
 
 -include("dataflow.hrl").
 -include("timeformats.hrl").
+-include("faxe_metrics.hrl").
 
 -define(KEY_BALENA_DEVICE_UUID, "BALENA_DEVICE_UUID").
 -define(KEY_FAXE_DEVICE_UUID, "FAXE_HOST").
