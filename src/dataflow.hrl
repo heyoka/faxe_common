@@ -3,7 +3,6 @@
 -author("Alexander Minichmair").
 
 -include("df_types.hrl").
--include("faxe_metrics.hrl").
 
 -ifdef(debug).
 -define(LOG(Msg, Args), io:format(Msg ++ "~n", Args)).

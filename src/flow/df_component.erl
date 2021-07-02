@@ -3,7 +3,7 @@
 -module(df_component).
 -author("Alexander Minichmair").
 
--include("dataflow.hrl").
+-include("faxe_common.hrl").
 
 -behaviour(gen_server).
 
