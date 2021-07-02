@@ -3,6 +3,7 @@
 -author("Alexander Minichmair").
 
 -include("df_types.hrl").
+-include("faxe_metrics.hrl").
 
 -ifdef(debug).
 -define(LOG(Msg, Args), io:format(Msg ++ "~n", Args)).
@@ -33,6 +34,7 @@
    component            :: atom(), %% callbacks module name
    cb_state             :: cbstate(), %% state for callback
    cb_handle_info       :: true | false,
+   cb_handle_ack        :: true | false,
    cb_inited = false    :: true | false,
    inports              :: list(), %% list of inputs {port, pid}
    auto_request         :: none | all | emit,
@@ -44,6 +46,7 @@
    ts                :: non_neg_integer(), %% timestamp in ms
    fields   = #{}    :: map(),
    tags     = #{}    :: map(),
+   dtag              :: non_neg_integer(),
    id       = <<>>   :: binary()
 }).
 

@@ -3,7 +3,7 @@
 -module(df_component).
 -author("Alexander Minichmair").
 
--include("faxe_common.hrl").
+-include("dataflow.hrl").
 
 -behaviour(gen_server).
 
@@ -71,11 +71,23 @@
        {emit,
           { Port :: df_port(), Value :: term() }, cbstate()
        } |
+       {emit,
+          Value :: term(), cbstate()
+       } |
        {request,
           { ReqPort :: df_port(), ReqPid :: pid() }, cbstate()
        } |
        {emit_request,
           { OutPort :: df_port(), Value :: term() }, { ReqPort :: df_port(), ReqPid :: pid() }, cbstate()
+       } |
+       {emit_request,
+          Value :: term(), { ReqPort :: df_port(), ReqPid :: pid() }, cbstate()
+       } |
+       {emit_ack,
+          { OutPort :: df_port(), Value :: term() }, DTag :: non_neg_integer(), cbstate()
+       } |
+       {emit_ack,
+          Value :: term(), DTag :: non_neg_integer(), cbstate()
        } |
 
        {error, Reason :: term()}.
@@ -95,11 +107,11 @@
 %%
 %% options with no 'Default' value, will be treated as mandatory
 %% @end
- -callback options() ->
- list(
-    {Name :: atom(), Type :: dataflow:option_value(), Default :: dataflow:option_value()|dataflow:option_config()} |
-    {Name :: atom(), Type :: atom()}
- ).
+-callback options() ->
+   list(
+   {Name :: atom(), Type :: dataflow:option_value(), Default :: dataflow:option_value()|dataflow:option_config()} |
+   {Name :: atom(), Type :: atom()}
+   ).
 %% @end
 
 %% @doc
@@ -108,7 +120,7 @@
 %% @end
 -callback check_options() ->
    list(
-      {Type :: atom(), term()} | {Type :: atom(), term(), term()} | {Type :: atom(), term(), term(), term()}
+   {Type :: atom(), term()} | {Type :: atom(), term(), term()} | {Type :: atom(), term(), term(), term()}
    ).
 
 %% @doc
@@ -124,7 +136,7 @@
 %% optional
 %% provide a list of inports for the component :
 %%
- -callback inports()  -> {ok, list()}.
+-callback inports()  -> {ok, list()}.
 
 
 
@@ -134,7 +146,7 @@
 %% optional
 %% provide a list of outports for the component:
 %%
- -callback outports() -> {ok, list()}.
+-callback outports() -> {ok, list()}.
 
 
 
@@ -145,10 +157,21 @@
 %% handle other messages that will be sent to this process :
 %%
 %% @end
- -callback handle_info(Request :: term(), State :: cbstate()) ->
-    {ok, NewCallbackState :: cbstate()} |
-    {emit, {Port :: non_neg_integer(), Value :: term()}, NewCallbackState :: cbstate()} |
-    {error, Reason :: term()}.
+-callback handle_info(Request :: term(), State :: cbstate()) ->
+   {ok, NewCallbackState :: cbstate()} |
+   {emit, {Port :: non_neg_integer(), Value :: term()}, NewCallbackState :: cbstate()} |
+   {error, Reason :: term()}.
+
+%% @doc
+%% HANDLE_ACK/3
+%%
+%% optional
+%% handle data acknowledge messages from downstream nodes :
+%%
+%% @end
+-callback handle_ack(Mode :: single|multi, DTag :: non_neg_integer(), State :: cbstate()) ->
+   {ok, NewCallbackState :: cbstate()} |
+   {error, Reason :: term()}.
 
 
 %% @doc
@@ -159,13 +182,13 @@
 %%
 %% @end
 -callback shutdown(State :: cbstate())
-    -> any().
+       -> any().
 
 %% these are optional (%% erlang 18+)
 -optional_callbacks([
-   options/0, check_options/0, wants/0, emits/0,
-   inports/0, outports/0,
-   handle_info/2, shutdown/1]).
+options/0, check_options/0, wants/0, emits/0,
+inports/0, outports/0,
+handle_info/2, handle_ack/3, shutdown/1]).
 
 
 
@@ -240,16 +263,17 @@ handle_call({start, Inputs, FlowMode}, _From,
    Opts = CBState,
    Inited = CB:init(NodeIndex, Inputs, Opts),
    {AReq, NewCBState} =
-   case Inited of
+      case Inited of
 
-      {ok, ARequest, NCBState}      -> {ARequest, NCBState};
-      {ok, NCBState}                -> {all, NCBState};
-      {error_options, Message}      -> erlang:error(Message);
-      {error, What}                 -> erlang:error(What)
-   end,
+         {ok, ARequest, NCBState}      -> {ARequest, NCBState};
+         {ok, NCBState}                -> {all, NCBState};
+         {error_options, Message}      -> erlang:error(Message);
+         {error, What}                 -> erlang:error(What)
+      end,
 
    AR = case FlowMode of pull -> AReq; push -> none end,
    CallbackHandlesInfo = erlang:function_exported(CB, handle_info, 2),
+   CallbackHandlesAck = erlang:function_exported(CB, handle_ack, 3),
    %% metrics
 %%   folsom_metrics:new_histogram(NId, slide, 60),
 %%   folsom_metrics:new_history(<< NId/binary, ?FOLSOM_ERROR_HISTORY >>, 24),
@@ -260,7 +284,8 @@ handle_call({start, Inputs, FlowMode}, _From,
          cb_state = NewCBState,
          cb_inited = true,
          flow_mode = FlowMode,
-         cb_handle_info = CallbackHandlesInfo}
+         cb_handle_info = CallbackHandlesInfo,
+         cb_handle_ack = CallbackHandlesAck}
    };
 handle_call(get_subscribers, _From, State=#c_state{node_index = NodeIndex}) ->
    {reply, {ok, df_subscription:subscriptions(NodeIndex)}, State}
@@ -299,6 +324,7 @@ handle_info({start, Inputs, FlowMode},
 
    AR = case FlowMode of pull -> AReq; push -> none end,
    CallbackHandlesInfo = erlang:function_exported(CB, handle_info, 2),
+   CallbackHandlesAck = erlang:function_exported(CB, handle_ack, 3),
 
    {noreply,
       State#c_state{
@@ -307,7 +333,10 @@ handle_info({start, Inputs, FlowMode},
          cb_state = NewCBState,
          cb_inited = true,
          flow_mode = FlowMode,
-         cb_handle_info = CallbackHandlesInfo}}
+         cb_handle_info = CallbackHandlesInfo,
+         cb_handle_ack = CallbackHandlesAck
+      }
+   }
 ;
 %%% DEBUG
 handle_info(start_debug, State = #c_state{}) ->
@@ -318,9 +347,15 @@ handle_info(stop_debug, State = #c_state{}) ->
    NewState = cb_handle_info(stop_debug, State),
    {noreply, NewState#c_state{emit_debug = false}};
 
-handle_info({request, ReqPid, ReqPort}, State=#c_state{node_index = NodeIndex}) ->
+handle_info({request, ReqPid, ReqPort}, State = #c_state{node_index = NodeIndex}) ->
    true = df_subscription:request(NodeIndex, ReqPid, ReqPort),
    {noreply, State};
+
+handle_info({ack, Mode, DTag} = Req, State = #c_state{inports = Ins}) ->
+   lager:notice("~p got ack for DTag: ~p (cb_handle_ack: ~p)",[self(), DTag, State#c_state.cb_handle_ack]),
+   NewState = cb_handle_ack(Mode, DTag, State),
+   lists:foreach(fun({_Port, Pid}) -> Pid ! Req end, Ins),
+   {noreply, NewState#c_state{emit_debug = false}};
 
 %% RECEIVING ITEM
 handle_info({item, _}, State=#c_state{cb_inited = false}) ->
@@ -339,7 +374,7 @@ handle_info({item, {Inport, Value}},
    case  catch(Module:process(Inport, Value, CBState)) of
       {'EXIT', {Reason, Stacktrace}} ->
          lager:error("'error' in component ~p caught when processing item: ~p -- ~p",
-         [State#c_state.component, {Inport, Value}, lager:pr_stacktrace(Stacktrace, {'EXIT', Reason})]),
+            [State#c_state.component, {Inport, Value}, lager:pr_stacktrace(Stacktrace, {'EXIT', Reason})]),
          metric(?METRIC_ERRORS, 1, State),
          {noreply, State};
 
@@ -358,10 +393,10 @@ handle_info({item, {Inport, Value}},
          end,
          {noreply, NewState}
    end
-   ;
+;
 %% EMITTING ITEM
 handle_info({emit, {Outport, Value}}, State=#c_state{node_id = _NId,
-      flow_mode = FMode, auto_request = AR, emitted = EmitCount}) ->
+   flow_mode = FMode, auto_request = AR, emitted = EmitCount}) ->
    emit(Outport, Value, State),
    case AR of
       none  -> ok;
@@ -382,14 +417,16 @@ handle_info(stop, State=#c_state{node_id = _N, component = Mod, cb_state = CBSta
 ;
 
 %% Callback Module handle_info
-handle_info(Req, State=#c_state{component = Module, cb_state = CB, cb_handle_info = true}) ->
+handle_info(Req, State = #c_state{component = Module, cb_state = CB, cb_handle_info = true}) ->
    case Module:handle_info(Req, CB) of
-              {ok, CB0} ->
-                 {noreply, State#c_state{cb_state = CB0}};
-              {emit, {_Port, _Val} = Data, CB1} ->
-                 handle_info({emit, Data}, State#c_state{cb_state = CB1});
-              {error, _Reason} ->
-                 {noreply, State#c_state{cb_state = CB}}
+      {ok, CB0} ->
+         {noreply, State#c_state{cb_state = CB0}};
+      {emit, {_Port, _Val} = Data, CB1} ->
+         handle_info({emit, Data}, State#c_state{cb_state = CB1});
+      {emit, Data, CB1} ->
+         handle_info({emit, {1, Data}}, State#c_state{cb_state = CB1});
+      {error, _Reason} ->
+         {noreply, State#c_state{cb_state = CB}}
    end
 
 ;
@@ -400,6 +437,15 @@ handle_info(_Req, State=#c_state{cb_handle_info = false}) ->
 cb_handle_info(_Req, State = #c_state{cb_handle_info = false}) -> State;
 cb_handle_info(Req, State = #c_state{cb_state = CB, component = Module}) ->
    case Module:handle_info(Req, CB) of
+      {ok, CB0} ->
+         State#c_state{cb_state = CB0};
+      {error, _Reason} ->
+         State
+   end.
+
+cb_handle_ack(_Mode, _DTag, State = #c_state{cb_handle_ack = false}) -> State;
+cb_handle_ack(Mode, DTag, State = #c_state{cb_state = CB, component = Module}) ->
+   case Module:handle_ack(Mode, DTag, CB) of
       {ok, CB0} ->
          State#c_state{cb_state = CB0};
       {error, _Reason} ->
@@ -434,6 +480,14 @@ handle_process_result({request, {Port, PPids}, NState}, State=#c_state{flow_mode
    maybe_request_items(Port, PPids, FMode),
    {State#c_state{cb_state = NState},
       true, false};
+handle_process_result({emit_ack, {Port, Emitted}, DTag, NState}, State = #c_state{inports = Ins}) ->
+   emit(Port, Emitted, State),
+   dataflow:ack(DTag, Ins),
+   {State#c_state{cb_state = NState}, false, true};
+handle_process_result({emit_ack, Emitted, DTag, NState}, State = #c_state{inports = Ins}) ->
+   emit(1, Emitted, State),
+   dataflow:ack(DTag, Ins),
+   {State#c_state{cb_state = NState}, false, true};
 handle_process_result({emit_request, {Port, Emitted}, {ReqPort, PPids}, NState},
     State=#c_state{flow_mode = FMode}) when is_list(PPids) ->
    emit(Port, Emitted, State),

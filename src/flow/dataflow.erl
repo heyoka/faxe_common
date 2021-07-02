@@ -23,7 +23,13 @@
    add_trace_handler/1,
    add_trace_handler/3]).
 
--export([request_items/2, emit/1, build_options/3, maybe_check_opts/2, maybe_debug/5]).
+-export([
+   request_items/2,
+   emit/1,
+   build_options/3,
+   maybe_check_opts/2,
+   maybe_debug/5,
+   ack/2, ack/3]).
 
 %%====================================================================
 %% CALLBACK API functions
@@ -107,6 +113,23 @@ maybe_debug(_Key, _Port, _Value, _Idx, false) ->
    ok;
 maybe_debug(Key, Port, Value, Idx, true) ->
    gen_event:notify(faxe_debug, {Key, Idx, Port, Value}).
+
+-spec ack(non_neg_integer()|#data_point{}|#data_batch{}, list(tuple())) -> [ok].
+ack(DTag, Inputs) when is_integer(DTag)->
+   ack(single, DTag, Inputs);
+ack(DataItem, Inputs) when is_record(DataItem, data_point) orelse is_record(DataItem, data_batch)  ->
+   {Mode, DTag} = retrieve_dtag(DataItem),
+   ack(Mode, DTag, Inputs).
+
+ack(Mode, DTag, Inputs) ->
+   lists:foreach(fun({_Port, Pid}) -> Pid ! {ack, Mode, DTag} end, Inputs).
+
+retrieve_dtag(#data_point{dtag = DTag}) ->
+   {single, DTag};
+retrieve_dtag(#data_batch{points = Points}) ->
+   P = lists:last(Points),
+   {multi, P#data_point.dtag}.
+
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%
