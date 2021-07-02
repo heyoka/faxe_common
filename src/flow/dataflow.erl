@@ -114,13 +114,17 @@ maybe_debug(_Key, _Port, _Value, _Idx, false) ->
 maybe_debug(Key, Port, Value, Idx, true) ->
    gen_event:notify(faxe_debug, {Key, Idx, Port, Value}).
 
--spec ack(non_neg_integer()|#data_point{}|#data_batch{}, list(tuple())) -> [ok].
+-spec ack(undefined|non_neg_integer()|#data_point{}|#data_batch{}, list(tuple())) -> [ok].
+ack(undefined, _Inputs) ->
+   ok;
 ack(DTag, Inputs) when is_integer(DTag)->
    ack(single, DTag, Inputs);
 ack(DataItem, Inputs) when is_record(DataItem, data_point) orelse is_record(DataItem, data_batch)  ->
    {Mode, DTag} = retrieve_dtag(DataItem),
    ack(Mode, DTag, Inputs).
 
+ack(_Mode, undefined, _Inputs) ->
+   ok;
 ack(Mode, DTag, Inputs) ->
    lists:foreach(fun({_Port, Pid}) -> Pid ! {ack, Mode, DTag} end, Inputs).
 

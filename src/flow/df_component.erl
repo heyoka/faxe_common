@@ -340,7 +340,6 @@ handle_info({start, Inputs, FlowMode},
 ;
 %%% DEBUG
 handle_info(start_debug, State = #c_state{}) ->
-   lager:notice("start_debug!"),
    NewState = cb_handle_info(start_debug, State),
    {noreply, NewState#c_state{emit_debug = true}};
 handle_info(stop_debug, State = #c_state{}) ->
@@ -352,14 +351,13 @@ handle_info({request, ReqPid, ReqPort}, State = #c_state{node_index = NodeIndex}
    {noreply, State};
 
 handle_info({ack, Mode, DTag} = Req, State = #c_state{inports = Ins}) ->
-   lager:notice("~p got ack for DTag: ~p (cb_handle_ack: ~p)",[self(), DTag, State#c_state.cb_handle_ack]),
    NewState = cb_handle_ack(Mode, DTag, State),
    lists:foreach(fun({_Port, Pid}) -> Pid ! Req end, Ins),
    {noreply, NewState#c_state{emit_debug = false}};
 
 %% RECEIVING ITEM
 handle_info({item, _}, State=#c_state{cb_inited = false}) ->
-   %% drop it, where are not yet initialized
+   %% drop it, we are not yet initialized
    lager:notice("Got Item but callback not yet initialized, item will be dropped!"),
    {noreply, State};
 handle_info({item, {Inport, Value}},
