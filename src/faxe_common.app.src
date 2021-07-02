@@ -10,7 +10,8 @@
     jsn,
     msgpack,
     qdate,
-    dfs
+    dfs,
+    mapz
    ]},
   {env,[]},
   {modules, []},
