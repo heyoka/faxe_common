@@ -12,7 +12,7 @@
 -module(faxe_lambda).
 -author("Alexander Minichmair").
 
--include("faxe_common.hrl").
+-include("dataflow.hrl").
 
 %% API
 -export([execute/3, execute/2, execute_bool/2]).
