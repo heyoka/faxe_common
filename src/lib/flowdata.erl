@@ -117,7 +117,7 @@ from_json_struct(JSON, TimeField, TimeFormat) ->
          #data_batch{points = Points}
    end.
 
-%% remove dots in field keys
+%% replace dots in field keys
 clean_field_keys(Map) when is_map(Map) ->
    F = fun(Key, Val, Acc) ->
       NewKey = binary:replace(Key, <<".">>, <<"_">>, [global]),
