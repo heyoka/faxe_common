@@ -68,7 +68,7 @@
    merge_points/1, merge/2, merge_points/2
 %%   ,
 %%   get_schema/1
-   , clean_field_keys/1, to_map_except/2, new/0, new/1]).
+   , clean_field_keys/1, to_map_except/2, new/0, new/1, set_root/2]).
 
 -define(DEFAULT_FIELDS, [<<"id">>, <<"df">>, <<"ts">>]).
 -define(DEFAULT_TS_FIELD, <<"ts">>).
@@ -117,7 +117,7 @@ from_json_struct(JSON, TimeField, TimeFormat) ->
          #data_batch{points = Points}
    end.
 
-%% replace dots in field keys
+%% replace dots with underscores in field keys
 clean_field_keys(Map) when is_map(Map) ->
    F = fun(Key, Val, Acc) ->
       NewKey = binary:replace(Key, <<".">>, <<"_">>, [global]),
@@ -625,7 +625,12 @@ is_root_path({Path}) when is_binary(Path) ->
 is_root_path(_) ->
    false.
 
-
+-spec set_root(#data_point{}, binary()) -> #data_point{}.
+set_root(Point = #data_point{fields = Fields}, NewRoot) when is_binary(NewRoot) ->
+   case maps:get(NewRoot, Fields, undefined) of
+      undefined -> Point#data_point{fields = #{NewRoot => Fields}};
+      _ -> Point
+   end.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% merge funcs
 %% @todo document !!
