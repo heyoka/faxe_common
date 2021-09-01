@@ -625,12 +625,28 @@ is_root_path({Path}) when is_binary(Path) ->
 is_root_path(_) ->
    false.
 
--spec set_root(#data_point{}, binary()) -> #data_point{}.
+%% @doc
+%% set NewRoot as the new root for the fields entry in a data_point record.
+%% If the Path NewRoot already exists in the fields map, the data_point record is left untouched.
+%% @end
+-spec set_root(#data_point{}, binary()|undefined) -> #data_point{}.
+set_root(Point = #data_point{}, undefined) ->
+   Point;
 set_root(Point = #data_point{fields = Fields}, NewRoot) when is_binary(NewRoot) ->
-   case maps:get(NewRoot, Fields, undefined) of
-      undefined -> Point#data_point{fields = #{NewRoot => Fields}};
-      _ -> Point
+   case is_root_path(NewRoot) of
+      true ->
+         case maps:is_key(NewRoot, Fields) of
+            true -> Point;
+            false -> Point#data_point{fields = #{NewRoot => Fields}}
+         end;
+      false ->
+         Path = path(NewRoot),
+         case jsn:get(Path, Fields) of
+            undefined -> Point#data_point{fields = jsn:set(Path, #{}, Fields)};
+            _Preset -> Point
+         end
    end.
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% merge funcs
 %% @todo document !!

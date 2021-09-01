@@ -385,8 +385,10 @@ init_timer(Align, Interval, Message) when is_atom(Align), is_binary(Interval) ->
          false -> Now
       end,
    TRef = faxe_time:send_at(NewTs, Message),
-   Timer = #faxe_timer{interval = faxe_time:duration_to_ms(Interval),
-      message = Message, last_time = NewTs, timer_ref = TRef},
+   Timer = #faxe_timer{
+      interval = faxe_time:duration_to_ms(Interval),
+      message = Message, last_time = NewTs, timer_ref = TRef
+   },
    Timer.
 
 %% @doc create a new timer instance
