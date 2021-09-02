@@ -22,7 +22,7 @@
    ip_to_bin/1, device_name/0, proplists_merge/2,
    levenshtein/2, build_topic/2, build_topic/1,
    to_bin/1, flip_map/1,
-   get_erlang_version/0, get_device_name/0]).
+   get_erlang_version/0, get_device_name/0, bytes/1]).
 
 -define(HTTP_PROTOCOL, <<"http://">>).
 
@@ -93,6 +93,21 @@ stringize_lambda(Fun) when is_function(Fun) ->
    {env, [{_, _, _, Abs}]} = erlang:fun_info(Fun, env),
    Str = erl_pp:expr({'fun', 1, {clauses, Abs}}),
    io_lib:format("~s~p",[lists:flatten(Str)|"\n"]).
+
+%% try to get byte_size of term
+bytes(Data) ->
+   case is_binary(Data) of
+      true -> byte_size(Data);
+      false ->
+         case is_list(Data) of
+            true ->
+               case catch iolist_size(Data) of
+                  Size when is_integer(Size) -> Size;
+                  _ -> 0
+               end;
+            false -> 0
+         end
+   end.
 
 %% @doc convert words to bytes with respect to the system's wordsize
 bytes_from_words(Words) ->
