@@ -68,7 +68,7 @@
    merge_points/1, merge/2, merge_points/2
 %%   ,
 %%   get_schema/1
-   , clean_field_keys/1, to_map_except/2, new/0, new/1, set_root/2]).
+   , clean_field_keys/1, to_map_except/2, new/0, new/1, set_root/2, set_root_key/2]).
 
 -define(DEFAULT_FIELDS, [<<"id">>, <<"df">>, <<"ts">>]).
 -define(DEFAULT_TS_FIELD, <<"ts">>).
@@ -632,19 +632,30 @@ is_root_path(_) ->
 -spec set_root(#data_point{}, binary()|undefined) -> #data_point{}.
 set_root(Point = #data_point{}, undefined) ->
    Point;
-set_root(Point = #data_point{fields = Fields}, NewRoot) when is_binary(NewRoot) ->
+set_root(Point = #data_point{}, NewRoot) when is_binary(NewRoot) ->
    case is_root_path(NewRoot) of
       true ->
-         case maps:is_key(NewRoot, Fields) of
-            true -> Point;
-            false -> Point#data_point{fields = #{NewRoot => Fields}}
-         end;
+         set_root_key(Point, NewRoot);
       false ->
-         Path = path(NewRoot),
-         case jsn:get(Path, Fields) of
-            undefined -> Point#data_point{fields = jsn:set(Path, #{}, Fields)};
-            _Preset -> Point
-         end
+         set_root_path(Point, NewRoot)
+   end.
+
+%% @doc
+%% used to set a new root to the fields key, when NewRoot is not a path, but a single level
+%% @end
+set_root_key(Point = #data_point{fields = Fields}, NewRoot) ->
+   case maps:is_key(NewRoot, Fields) of
+      true -> Point;
+      false -> Point#data_point{fields = #{NewRoot => Fields}}
+   end.
+
+%% @doc
+%% used to set a new root to the fields key, when NewRoot is a deep path
+set_root_path(Point = #data_point{fields = Fields}, NewRoot) ->
+   Path = path(NewRoot),
+   case jsn:get(Path, Fields) of
+      undefined -> Point#data_point{fields = jsn:set(Path, #{}, Fields)};
+      _Preset -> Point
    end.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
