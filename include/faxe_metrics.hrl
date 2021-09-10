@@ -13,6 +13,8 @@
 -define(METRIC_BYTES_READ,       <<"bytes_read">>). %% keep flow total
 -define(METRIC_SENDING_TIME,     <<"sending_time">>).
 -define(METRIC_BYTES_SENT,       <<"bytes_sent">>). %% keep flow total
+-define(METRIC_BYTES_SENT_AVG,   <<"bytes_sent_avg">>). %% keep flow total
+-define(METRIC_BYTES_READ_AVG,   <<"bytes_read_avg">>). %% keep flow total
 
 %% metrics common to all nodes
 -define(NODE_COMMON_METRICS, [
