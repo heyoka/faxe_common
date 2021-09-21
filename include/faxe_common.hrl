@@ -23,6 +23,15 @@
    max,
    current
 }).
+
+
+-record(adapint, {
+   current     = 50 :: non_neg_integer(), %% current interval
+   min         = 2 :: non_neg_integer(),
+   max         = 200 :: non_neg_integer(),
+   step        = 2 ::non_neg_integer(),
+   state_count = 0 :: non_neg_integer()
+}).
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%
 %% db records

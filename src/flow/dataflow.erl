@@ -209,6 +209,7 @@ val(Val, {_, string_template}) when is_binary(Val) -> Val;
 val(Val, {_, list}) when is_list(Val) -> Val;
 val(Val, {_, atom}) when is_atom(Val) -> Val;
 val(Val, {_, lambda}) when is_function(Val) -> Val;
+val(Val, {O, boolean}) -> val(Val, {O, bool});
 val(true, {_, bool}) -> true;
 val(false, {_, bool}) -> false;
 

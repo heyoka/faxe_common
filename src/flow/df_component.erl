@@ -9,7 +9,7 @@
 
 %% API
 -export([start_link/6]).
--export([start_node/3, inports/1, outports/1, start_async/3, wants/1, emits/1]).
+-export([start_node/3, inports/1, outports/1, start_async/3, wants/1, emits/1, add_options/0, add_options/1]).
 
 %% Callback API
 
@@ -195,6 +195,11 @@ handle_info/2, handle_ack/3, shutdown/1]).
 %%%===================================================================
 %%% API
 %%%===================================================================
+
+add_options() ->
+   [{'_name', string, <<"">>}].
+add_options(Default) ->
+   [{'_name', string, Default}].
 
 -spec(start_link(atom(), term(), term(), list(), list(), term()) ->
    {ok, Pid :: pid()} | ignore | {error, Reason :: term()}).

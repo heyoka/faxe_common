@@ -14,11 +14,13 @@
 
 -define(SERVER, ?MODULE).
 
+-include("faxe_common.hrl").
+
 -record(state, {
    queue,
    parent,
    subscriptions,
-   deq_interval = 15
+   interval
 }).
 
 %%%===================================================================
@@ -49,13 +51,12 @@ handle_cast(_Request, State = #state{}) ->
    {noreply, State}.
 
 handle_info(deq, State = #state{}) ->
-   next(State),
-   {noreply, State};
+   {noreply, next(State)};
 handle_info(setup, State = #state{parent = Parent}) ->
+   Int = adaptive_interval:new(),
    {ok, Subs} = gen_server:call(Parent, get_subscribers),
-   NewState = State#state{subscriptions = Subs},
-   next(NewState),
-   {noreply, NewState}.
+   NewState = State#state{subscriptions = Subs, interval = Int},
+   {noreply, next(NewState)}.
 
 terminate(_Reason, _State = #state{}) ->
    ok.
@@ -66,14 +67,18 @@ code_change(_OldVsn, State = #state{}, _Extra) ->
 %%%===================================================================
 %%% Internal functions
 %%%===================================================================
-next(State=#state{queue = Q, deq_interval = Interval}) ->
+next(State=#state{queue = Q, interval = AdaptInt}) ->
+   {NewInterval, NewAdaptInt} =
    case esq:deq(Q) of
-      [] -> ok; %lager:info("Queue is empty!"), ok;
+      [] ->
+         adaptive_interval:in(miss, AdaptInt);
       [#{payload := M}] ->
-%%         lager:notice("~p: msg from Q: ~p", [faxe_time:now(), M]),
-         publish(M, State)
+         publish(M, State),
+         adaptive_interval:in(hit, AdaptInt)
    end,
-   erlang:send_after(Interval, self(), deq).
+   lager:info("new interval: ~p", [NewInterval]),
+   erlang:send_after(NewInterval, self(), deq),
+   State#state{interval = NewAdaptInt}.
 
 publish(Message, #state{subscriptions = Subs}) ->
    df_subscription:output(Subs, Message, 1).
