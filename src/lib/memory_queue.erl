@@ -23,7 +23,6 @@ new() ->
 
 -spec new(non_neg_integer()) -> mem_queue().
 new(Size) ->
-   lager:info("MEM_Q with size: ~p", [Size]),
    #mem_queue{q = queue:new(), max = Size, current = 0}.
 
 -spec enq(term(), mem_queue()) -> mem_queue().
