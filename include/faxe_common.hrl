@@ -30,7 +30,8 @@
    min         = 2 :: non_neg_integer(),
    max         = 200 :: non_neg_integer(),
    step        = 2 ::non_neg_integer(),
-   state_count = 0 :: non_neg_integer()
+   state_count = 0 :: non_neg_integer(),
+   history     = 0
 }).
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%

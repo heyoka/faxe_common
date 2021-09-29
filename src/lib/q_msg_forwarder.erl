@@ -76,7 +76,6 @@ next(State=#state{queue = Q, interval = AdaptInt}) ->
          publish(M, State),
          adaptive_interval:in(hit, AdaptInt)
    end,
-   lager:info("new interval: ~p", [NewInterval]),
    erlang:send_after(NewInterval, self(), deq),
    State#state{interval = NewAdaptInt}.
 
