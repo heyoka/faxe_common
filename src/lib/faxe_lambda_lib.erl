@@ -184,6 +184,21 @@ topic_part(Topic, Index, Separator) when is_binary(Topic), is_binary(Separator),
          erlang:error("faxe_lambda_lib, topic_part", [Topic, Index, Separator])
    end.
 
+-spec to_json_string(map()|list()) -> binary().
+to_json_string(MapOrList) when is_map(MapOrList) orelse is_list(MapOrList) ->
+   case jiffy:encode(MapOrList, []) of
+      Bin when is_binary(Bin) -> Bin;
+      IoList when is_list(IoList) -> iolist_to_binary(IoList)
+   end.
+
+-spec from_json_string(binary()) -> map()|list().
+from_json_string(Bin) when is_binary(Bin) ->
+   try jiffy:decode(Bin, [return_maps]) of
+      Json when is_map(Json) orelse is_list(Json) -> Json
+   catch
+      _:_ -> #{}
+   end.
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% additional
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
