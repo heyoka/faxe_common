@@ -1,8 +1,9 @@
 %%%-------------------------------------------------------------------
 %%% @author heyoka
-%%% @copyright (C) 2021, <COMPANY>
+%%% @copyright (C) 2021
 %%% @doc
 %%% bounded in-memory queue
+%%% used for simple in-memory queuing, can also be used as a kind of circular buffer
 %%% @end
 %%% Created : 08. Feb 2021 18:53
 %%%-------------------------------------------------------------------
@@ -11,7 +12,7 @@
 -include("faxe_common.hrl").
 
 %% API
--export([enq/2, deq/1, to_list/1, new/1, to_list_reset/1, new/0]).
+-export([enq/2, deq/1, to_list/1, new/1, to_list_reset/1, new/0, member/2]).
 
 -type mem_queue() :: #mem_queue{}.
 -export_type([mem_queue/0]).
@@ -45,6 +46,11 @@ deq(Q=#mem_queue{q = Queue, current = Len}) ->
       {empty, _Queue1} ->
          {empty, Q}
    end.
+
+%% @doc Return true or false depending on if Item is in queue
+-spec member(term(), mem_queue()) -> true|false.
+member(Item, #mem_queue{q = Queue}) ->
+   queue:member(Item, Queue).
 
 -spec to_list(mem_queue()) -> list().
 to_list(#mem_queue{q = Queue}) ->
@@ -93,6 +99,21 @@ reset_test() ->
    ?assertEqual([1,2,3], Res),
    ?assertEqual(0, QNew#mem_queue.current),
    ?assertEqual([], to_list(QNew)).
+
+member_test() ->
+   Q = new(15),
+   Q1 = enq(1, Q),
+   Q2 = enq(2, Q1),
+   Q3 = enq(3, Q2),
+   ?assertEqual(true, member(2, Q3)).
+
+not_member_test() ->
+   Q = new(15),
+   Q1 = enq(1, Q),
+   Q2 = enq(2, Q1),
+   Q3 = enq(3, Q2),
+   ?assertEqual(false, member(44, Q3)).
+
 
 -endif.
 
