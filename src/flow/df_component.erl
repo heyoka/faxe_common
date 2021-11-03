@@ -323,8 +323,8 @@ handle_info({start, Inputs, FlowMode},
 
          {ok, ARequest, NCBState}      -> {ARequest, NCBState};
          {ok, NCBState}                -> {all, NCBState};
-         {error_options, Message}      -> erlang:error(Message);
-         {error, What}                 -> erlang:error(What)
+         {error_options, Message}      -> lager:error("Starting failed with Reason: ~p",[Message]), erlang:error(Message);
+         {error, What}                 -> lager:error("Starting failed with Reason: ~p",[What]), erlang:error(What)
       end,
 
    AR = case FlowMode of pull -> AReq; push -> none end,
