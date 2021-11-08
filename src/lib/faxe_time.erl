@@ -58,12 +58,7 @@
    timer_start/2,
    timer_next/1,
    timer_cancel/1
-   , timer_now/1,
-   init_timer/3,
-   timer_set/2,
-   init_timer/5,
-   timer_set_interval/2,
-   timer_next/2]).
+   , timer_now/1, init_timer/3]).
 
 %%% @doc
 %%% get "now" in milliseconds,
@@ -384,20 +379,14 @@ init_timer(_Align, undefined, _Message) ->
    undefined;
 init_timer(Align, Interval, Message) when is_atom(Align), is_binary(Interval) ->
    Now = faxe_time:now(),
-   init_timer(Now, Align, Interval, 0, Message).
-
--spec init_timer(non_neg_integer(), true|false, undefined|duration(), integer(), term()) -> #faxe_timer{}.
-init_timer(_Time, _Align, undefined, _Offset, _Message) ->
-   undefined;
-init_timer(Time, Align, Interval, Offset, Message) when is_integer(Time), is_atom(Align), is_binary(Interval) ->
    NewTs =
       case Align of
-         true -> faxe_time:align(Time, faxe_time:binary_to_duration(Interval));
-         false -> Time
+         true -> faxe_time:align(Now, faxe_time:binary_to_duration(Interval));
+         false -> Now
       end,
-   TRef = faxe_time:send_at(NewTs + Offset, Message),
+   TRef = faxe_time:send_at(NewTs, Message),
    Timer = #faxe_timer{
-      interval = faxe_time:duration_to_ms(Interval), offset = Offset,
+      interval = faxe_time:duration_to_ms(Interval),
       message = Message, last_time = NewTs, timer_ref = TRef
    },
    Timer.
@@ -409,17 +398,6 @@ timer_new(Interval, Message) ->
       interval = Interval,
       message = Message
    }.
-
-%% set the timer to a new time-stamp
--spec timer_set(binary()|non_neg_integer(), #faxe_timer{}) -> #faxe_timer{}.
-timer_set(NewTs, Timer = #faxe_timer{}) when is_integer(NewTs) ->
-   Timer#faxe_timer{last_time = NewTs};
-timer_set(NewTime, Timer = #faxe_timer{}) when is_binary(NewTime) ->
-   T = time_format:iso8601_to_ms(NewTime),
-   timer_set(T, Timer).
-
-timer_set_interval(NewInterval, Timer = #faxe_timer{}) when is_integer(NewInterval) ->
-   Timer#faxe_timer{interval = NewInterval}.
 
 %% @doc create a timer and immediately send the timeout message without waiting for the first interval to elapse
 -spec timer_start(non_neg_integer(), term()) -> #faxe_timer{}.
@@ -435,24 +413,14 @@ timer_now(Timer = #faxe_timer{message = Message}) ->
    TRef = erlang:send_after(0, self(), Message),
    Timer#faxe_timer{last_time = Now, timer_ref = TRef}.
 
-%% @doc sends the timeout message in interval milliseconds, use default offset
+%% @doc sends the timeout message in interval milliseconds
 -spec timer_next(undefined|#faxe_timer{}) -> #faxe_timer{}.
 timer_next(undefined) ->
    undefined;
-timer_next(Timer = #faxe_timer{offset = Offset}) ->
-   timer_next_update(Timer, Offset).
-
-%% @doc sends the timeout message in interval milliseconds, overwrite default offset
--spec timer_next(undefined|#faxe_timer{}, integer()) -> #faxe_timer{}.
-timer_next(undefined, _Offset) ->
-   undefined;
-timer_next(Timer = #faxe_timer{}, Offset) ->
-   timer_next_update(Timer, Offset).
-
-timer_next_update(Timer = #faxe_timer{interval = Interval, message = Message, last_time = Last}, Offset) ->
+timer_next(Timer = #faxe_timer{interval = Interval, message = Message, last_time = Last}) ->
    NewAt = Last + Interval,
-   lager:notice("timer next send at:~p with offset ~p",[to_iso8601(NewAt+Offset), Offset]),
-   TRef = faxe_time:send_at(NewAt + Offset, Message),
+%%   lager:notice("timer next send in: ~p ms for :~p || ~p",[NewAt-faxe_time:now(), NewAt, Timer]),
+   TRef = faxe_time:send_at(NewAt, Message),
    Timer#faxe_timer{last_time = NewAt, timer_ref = TRef}.
 
 

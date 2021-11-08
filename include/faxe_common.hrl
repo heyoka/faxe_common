@@ -14,7 +14,6 @@
 -record(faxe_timer, {
    last_time = 0 :: non_neg_integer(),
    interval,
-   offset = 0,
    message = poll,
    timer_ref
 }).
