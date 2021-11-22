@@ -68,7 +68,7 @@
    merge_points/1, merge/2, merge_points/2
 %%   ,
 %%   get_schema/1
-   , clean_field_keys/1, to_map_except/2, new/0, new/1, set_root/2, set_root_key/2]).
+   , clean_field_keys/1, to_map_except/2, new/0, new/1, set_root/2, set_root_key/2, tss_fields/2, values/3, value/3, ts/2]).
 
 -define(DEFAULT_FIELDS, [<<"id">>, <<"df">>, <<"ts">>]).
 -define(DEFAULT_TS_FIELD, <<"ts">>).
@@ -218,6 +218,17 @@ ts(#data_point{ts = Ts}) ->
 ts(#data_batch{points = Points}) ->
    [ts(Point) || Point <- Points].
 
+%% @doc
+%% get a data_point's timestamp. If it is not defined, uses a default instead.
+%% @end
+-spec ts(#data_point{}|#data_batch{}, Default :: non_neg_integer()) -> non_neg_integer() | list(non_neg_integer()).
+ts(#data_point{ts = undefined}, Default) ->
+   Default;
+ts(#data_point{ts = Ts}, _Default) ->
+   Ts;
+ts(#data_batch{points = Points}, Default) ->
+   [ts(P, Default) || P <- Points].
+
 %%
 %% @doc
 %% get the value with a key from a #data_point field or tag,
@@ -227,20 +238,25 @@ ts(#data_batch{points = Points}) ->
 %% @end
 %%
 -spec value(#data_point{}, jsonpath:path()) -> term()|undefined.
-value(#data_point{ts = Ts}, <<"ts">>) ->
+value(P = #data_point{}, F) ->
+   value(P, F, undefined).
+-spec value(#data_point{}, jsonpath:path(), Default :: term()) -> term()|undefined.
+value(#data_point{ts = Ts}, <<"ts">>, _Default) ->
    Ts;
-value(#data_point{fields = Fields, tags = Tags}, F) ->
+value(#data_point{fields = Fields, tags = Tags}, F, Default) ->
    Path = path(F),
-   case jsn_get(Path, Fields) of
-      undefined -> jsn_get(Path, Tags);
+   case jsn_get(Path, Fields, Default) of
+      undefined -> jsn_get(Path, Tags, Default);
       Value -> Value
    end.
 %%
 %% @doc get the values with a key from data_batch fields or tags @end
 %%
--spec values(#data_batch{}, jsonpath:path()) -> list(term()|undefined).
-values(#data_batch{points = Points}, F) ->
-   [value(Point, F) || Point <- Points].
+values(B = #data_batch{}, F) ->
+   values(B, F, undefined).
+-spec values(#data_batch{}, jsonpath:path(), Default :: term()) -> list(term()|undefined).
+values(#data_batch{points = Points}, F, Default) ->
+   [value(Point, F, Default) || Point <- Points].
 
 %%
 %% @doc get the values with a key from field(s) @end
@@ -264,6 +280,21 @@ fields(#data_point{fields = _Fields}, []) ->
    [];
 fields(#data_point{fields = Fields}, PathList) when is_list(PathList) ->
    jsn_getlist(PathList, Fields).
+
+%% get the timestamps and fieldvalues  as {TsList, ValList} from a data_batch, where undefineds are not included
+-spec tss_fields(#data_batch{}, binary()|tuple()) -> {list(), list()}.
+tss_fields(#data_batch{points = Points}, Path) ->
+   lists:foldl(
+      fun(Point=#data_point{ts=Ts}, {Tss, Vals} =Acc) ->
+         case field(Point, Path) of
+            undefined -> Acc;
+            Val -> {Tss++[Ts], Vals++[Val]}
+         end
+      end,
+      {[], []},
+      Points
+   ).
+
 
 %% @doc
 %% get an unordered list of all fieldnames from the given data_point

@@ -134,6 +134,8 @@ ack(Mode, DTag, Inputs) ->
 
 retrieve_dtag(#data_point{dtag = DTag}) ->
    {single, DTag};
+retrieve_dtag(#data_batch{points = []}) ->
+   {multi, 0};
 retrieve_dtag(#data_batch{points = Points}) ->
    P = lists:last(Points),
    {multi, P#data_point.dtag}.

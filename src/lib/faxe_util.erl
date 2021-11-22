@@ -75,7 +75,8 @@ prefix_binary(Bin, Prefix) when is_binary(Bin), is_binary(Prefix) ->
 -spec clean_query(binary()) -> binary().
 clean_query(QueryBin) when is_binary(QueryBin) ->
    Q0 = re:replace(QueryBin, "\n|\t|\r|;", " ",[global, {return, binary}]),
-   re:replace(Q0, "(\s){2,}", " ", [global, {return, binary}]).
+   Q = re:replace(Q0, "(\s){2,}", " ", [global, {return, binary}]),
+   string:trim(Q).
 
 %% check if the given string seems to be a valid "select ... from" statement
 -spec check_select_statement(binary()|list()) -> true|false.
