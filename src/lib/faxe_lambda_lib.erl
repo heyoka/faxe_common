@@ -242,6 +242,10 @@ to_rfc3339(Ts) -> time_format:to_rfc3339(Ts).
 time_convert(Ts, Format) ->
    time_format:convert(Ts, Format).
 
+time_align(Ts, DurationUnit) when is_integer(Ts), is_binary(DurationUnit) ->
+   Unit = faxe_time:binary_to_duration(DurationUnit),
+   faxe_time:align(Ts, Unit).
+
 -spec millisecond(non_neg_integer()) -> non_neg_integer().
 millisecond(Ts) ->
    faxe_time:get(millisecond, Ts).
@@ -314,6 +318,12 @@ not_member(Ele, Coll) -> not member(Ele, Coll).
 %%% maps
 -spec map_get(binary(), map()) -> term().
 map_get(Key, Map) -> maps:get(Key, Map, undefined).
+
+-spec size(map()|list()) -> integer().
+size(Map) when is_map(Map) ->
+   maps:size(Map);
+size(List) when is_list(List) ->
+   length(List).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% lambda state functions

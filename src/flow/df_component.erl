@@ -473,6 +473,9 @@ code_change(_OldVsn, State, _Extra) ->
 %%%===================================================================
 
 -spec handle_process_result(tuple(), #c_state{}) -> {NewState::#c_state{}, boolean(), boolean()}.
+handle_process_result({emit, Emitting, NState}, State=#c_state{}) when is_list(Emitting) ->
+   [emit(Port, Emitted, State) || {Port, Emitted} <- Emitting],
+   {State#c_state{cb_state = NState},false, true};
 handle_process_result({emit, {Port, Emitted}, NState}, State=#c_state{}) when is_integer(Port) ->
    emit(Port, Emitted, State),
    {State#c_state{cb_state = NState},false, true};

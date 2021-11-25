@@ -109,6 +109,7 @@ from_json_struct(JSON) ->
 -spec from_json_struct(binary(), binary(), binary()) -> #data_point{}|#data_batch{}.
 from_json_struct(JSON, TimeField, TimeFormat) ->
    Struct = from_json(JSON),
+%%   lager:notice("Struct: ~p",[Struct]),
    case Struct of
       Map when is_map(Map) ->
          point_from_json_map(clean_field_keys(Map), TimeField, TimeFormat);
@@ -131,19 +132,9 @@ point_from_json_map(Map) ->
    point_from_json_map(Map, ?DEFAULT_TS_FIELD, ?TF_TS_MILLI).
 
 -spec point_from_json_map(map(), binary(), binary()) -> #data_point{}.
-%%point_from_json_map(Map, TimeField, TimeFormat) ->
-%%   Ts0 = maps:get(TimeField, Map, undefined),
-%%   Ts =
-%%      case Ts0 of
-%%         undefined -> faxe_time:now();
-%%         Timestamp -> time_format:convert(Timestamp, TimeFormat)
-%%      end,
-%%   Data = maps:without(?DEFAULT_FIELDS, Map),
-%%   Fields = maps:remove(?DEFAULT_TS_FIELD, maps:with(?DEFAULT_FIELDS, Map)),
-%%   Point = #data_point{ts = Ts, fields = Data},
-%%   set_fields(Point, maps:to_list(Fields)).
 point_from_json_map(Map, TimeField, TimeFormat) ->
-   Ts0 = maps:get(TimeField, Map, undefined),
+   Ts0 = jsn_get(TimeField, Map, undefined),
+%%   Ts0 = maps:get(TimeField, Map, undefined),
    Ts =
       case Ts0 of
          undefined -> faxe_time:now();
