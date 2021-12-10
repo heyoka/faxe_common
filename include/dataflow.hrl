@@ -53,5 +53,6 @@
    id                :: binary(),
    points   = []     :: list(#data_point{}),
    start             :: non_neg_integer(),
-   ed                :: non_neg_integer()
+   ed                :: non_neg_integer(),
+   dtag              :: non_neg_integer()
 }).

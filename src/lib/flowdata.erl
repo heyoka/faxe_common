@@ -68,7 +68,7 @@
    merge_points/1, merge/2, merge_points/2
 %%   ,
 %%   get_schema/1
-   , clean_field_keys/1, to_map_except/2, new/0, new/1, set_root/2, set_root_key/2, tss_fields/2, values/3, value/3, ts/2]).
+   , clean_field_keys/1, to_map_except/2, new/0, new/1, set_root/2, set_root_key/2, tss_fields/2, values/3, value/3, ts/2, merge/1, set_dtag/2]).
 
 -define(DEFAULT_FIELDS, [<<"id">>, <<"df">>, <<"ts">>]).
 -define(DEFAULT_TS_FIELD, <<"ts">>).
@@ -177,14 +177,16 @@ merge_points([#data_point{ts=Ts} |_Ps] = Points, Field) ->
    set_field(#data_point{ts = Ts}, Field, Res).
 merge_points([#data_point{ts=Ts} |_Ps] = Points) ->
    FMaps = [P#data_point.fields || P <- Points],
+   lager:info("FMAPs: ~p",[FMaps]),
    Res = merge_fields(FMaps),
    #data_point{ts = Ts, fields = Res}.
 merge_fields(FieldMaps) ->
-   merge_fields(FieldMaps, #{}).
-merge_fields([], Acc) ->
-   Acc;
-merge_fields([F1|Fields], Acc) ->
-   merge_fields(Fields, merge(F1, Acc)).
+   merge(FieldMaps).
+%%   merge_fields(FieldMaps, #{}).
+%%merge_fields([], Acc) ->
+%%   Acc;
+%%merge_fields([F1|Fields], Acc) ->
+%%   merge_fields(Fields, merge(F1, Acc)).
 
 %% get an empty data_point or data_batch record
 -spec new() -> #data_point{}.
@@ -309,6 +311,15 @@ tag_names(#data_point{tags = Tags}) ->
 -spec set_ts(#data_point{}, non_neg_integer()) -> #data_point{}.
 set_ts(P=#data_point{}, NewTs) ->
    P#data_point{ts = NewTs}.
+
+
+%% @doc
+%% set a dtag (some kind of deliver tag maybe) to a data-item
+%% @end
+set_dtag(P = #data_point{}, DTag) ->
+   P#data_point{dtag = DTag};
+set_dtag(B = #data_batch{}, DTag) ->
+   B#data_batch{dtag = DTag}.
 
 %% @doc
 %% Set the field Key to Value with path.
@@ -651,9 +662,12 @@ is_root_path(_) ->
 %% set NewRoot as the new root for the fields entry in a data_point record.
 %% If the Path NewRoot already exists in the fields map, the data_point record is left untouched.
 %% @end
--spec set_root(#data_point{}, binary()|undefined) -> #data_point{}.
-set_root(Point = #data_point{}, undefined) ->
-   Point;
+-spec set_root(#data_point{}|#data_batch{}, binary()|tuple()|undefined) -> #data_point{}.
+set_root(Item, undefined) ->
+   Item;
+set_root(Batch = #data_batch{points = Points}, NewRoot) when is_binary(NewRoot), is_tuple(NewRoot) ->
+   NewPoints = [set_root(P, NewRoot) || P <- Points],
+   Batch#data_batch{points = NewPoints};
 set_root(Point = #data_point{}, NewRoot) when is_binary(NewRoot) ->
    case is_root_path(NewRoot) of
       true ->
@@ -683,7 +697,10 @@ set_root_path(Point = #data_point{fields = Fields}, NewRoot) ->
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% merge funcs
 %% @todo document !!
-merge(M1, M2) when is_map(M1), is_map(M2) -> mapz:deep_merge(merge_fun(), #{}, [M1, M2]);
+merge([H|_]=List) when is_map(H), is_list(List) ->
+   mapz:deep_merge(merge_fun(), #{}, List).
+merge(M1, M2) when is_map(M1), is_map(M2) ->
+   merge([M1, M2]);
 merge(M1, M2) when is_list(M1), is_list(M2) -> lists:merge(M1, M2);
 merge(V1, V2) when is_number(V1), is_number(V2) -> V1 + V2;
 merge(S1, S2) when is_binary(S1), is_binary(S2) -> string:concat(S1, S2);
