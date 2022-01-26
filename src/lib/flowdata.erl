@@ -134,7 +134,6 @@ point_from_json_map(Map) ->
 -spec point_from_json_map(map(), binary(), binary()) -> #data_point{}.
 point_from_json_map(Map, TimeField, TimeFormat) ->
    Ts0 = jsn_get(TimeField, Map, undefined),
-%%   Ts0 = maps:get(TimeField, Map, undefined),
    Ts =
       case Ts0 of
          undefined -> faxe_time:now();
