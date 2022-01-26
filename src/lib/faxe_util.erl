@@ -195,7 +195,7 @@ to_bin(Float) when is_float(Float) -> float_to_binary(Float);
 to_bin(Bin) -> Bin.
 
 -spec to_num(any()) -> number()|term().
-to_num(I) when is_binary(I), is_list(I) ->
+to_num(I) when is_binary(I) orelse is_list(I) ->
    case string_to_number(I) of
       false -> I;
       Num -> Num
