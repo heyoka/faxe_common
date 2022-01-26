@@ -68,7 +68,7 @@
    merge_points/1, merge/2, merge_points/2
 %%   ,
 %%   get_schema/1
-   , clean_field_keys/1, to_map_except/2, new/0, new/1, set_root/2, set_root_key/2, tss_fields/2, values/3, value/3, ts/2, merge/1, set_dtag/2]).
+   , clean_field_keys/1, to_map_except/2, new/0, new/1, set_root/2, set_root_key/2, tss_fields/2, values/3, value/3, ts/2, merge/1, set_dtag/2, to_num/1]).
 
 -define(DEFAULT_FIELDS, [<<"id">>, <<"df">>, <<"ts">>]).
 -define(DEFAULT_TS_FIELD, <<"ts">>).
@@ -692,6 +692,11 @@ set_root_path(Point = #data_point{fields = Fields}, NewRoot) ->
       undefined -> Point#data_point{fields = jsn:set(Path, #{}, Fields)};
       _Preset -> Point
    end.
+
+%% convert every suitable value to a numeric type
+to_num(Map) when is_map(Map) ->
+   F = fun(_K, Val) -> faxe_util:to_num(Val) end,
+   maps:map(F, Map).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% merge funcs

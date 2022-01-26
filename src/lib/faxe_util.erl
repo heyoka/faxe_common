@@ -22,7 +22,7 @@
    ip_to_bin/1, device_name/0, proplists_merge/2,
    levenshtein/2, build_topic/2, build_topic/1,
    to_bin/1, flip_map/1,
-   get_erlang_version/0, get_device_name/0, bytes/1]).
+   get_erlang_version/0, get_device_name/0, bytes/1, to_num/1]).
 
 -define(HTTP_PROTOCOL, <<"http://">>).
 
@@ -192,9 +192,28 @@ to_bin(L) when is_list(L) -> list_to_binary(L);
 to_bin(E) when is_atom(E) -> atom_to_binary(E, utf8);
 to_bin(Int) when is_integer(Int) -> integer_to_binary(Int);
 to_bin(Float) when is_float(Float) -> float_to_binary(Float);
-%%to_bin(Bin) when is_binary(Bin) -> Bin;
 to_bin(Bin) -> Bin.
 
+-spec to_num(any()) -> number()|term().
+to_num(I) when is_binary(I), is_list(I) ->
+   case string_to_number(I) of
+      false -> I;
+      Num -> Num
+   end;
+to_num(I) -> I.
+
+string_to_number(L) when is_list(L) ->
+   string_to_number(list_to_binary(L));
+string_to_number(L) when is_binary(L) ->
+   Float = (catch erlang:binary_to_float(L)),
+   case is_number(Float) of
+      true -> Float;
+      false -> Int = (catch erlang:binary_to_integer(L)),
+         case is_number(Int) of
+            true -> Int;
+            false -> false
+         end
+   end.
 
 %% Levenshtein code by Adam Lindberg, Fredrik Svensson via
 %% http://www.trapexit.org/String_similar_to_(Levenshtein)
