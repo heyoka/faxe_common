@@ -50,7 +50,10 @@
    to_ms/1,
    now_aligned/1,
    now_aligned/2,
-   to_htime/1, send_at/2, to_iso8601/1, is_duration_string/1]).
+   to_htime/1,
+   send_at/2,
+   to_iso8601/1,
+   is_duration_string/1]).
 
 %% Timer API
 -export([
@@ -231,6 +234,8 @@ to_ms({Date, {H, Min, SecFrac}}) when is_float(SecFrac) ->
    to_ms({Date, {H, Min, Sec, Milli}});
 to_ms({Date,{H, Min, S, Milli}}) ->
    qdate:to_unixtime({Date,{H, Min, S}}) * 1000 + Milli;
+to_ms({{_Y, _M, _D} = Date, {{Hour, Minute, Second}, MilliSecond}}) ->
+   to_ms({Date, {Hour, Minute, Second, MilliSecond}});
 to_ms(Date) when is_tuple(Date) ->
    qdate:to_unixtime(Date)*1000.
 

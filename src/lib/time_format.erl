@@ -45,7 +45,13 @@ convert(Input, ?TF_ISO8601) ->
 convert(Input, ?TF_RFC3339) ->
    rfc3339_to_ms(Input);
 convert(Input, ?TF_CONVTRACK_DT) ->
-   conv_dt_to_ms(Input).
+   conv_dt_to_ms(Input);
+convert(Input, Format) ->
+   case datestring:parse_datetime(Format, Input) of
+      {ok, DateTime} -> faxe_time:to_ms(DateTime);
+      E -> E
+   end.
+
 
 
 %% <<"1565343079.173588">>
@@ -136,6 +142,50 @@ rfc3339_to_ms_test() ->
 conv_dt_to_ms_test() ->
    Dt = <<"19.08.01  17:33:44,867  ">>,
    ?assertEqual(1564680824867, conv_dt_to_ms(Dt)).
+parse_datetime_1_test() ->
+   Dt = "2022_01_18__15-49-07",
+   Expected = 1642520947000,
+   Result = convert(Dt, "Y_m_d__H-M-S"),
+   ?assertEqual(Expected, Result),
+   ?assertEqual(<<"2022-01-18T15:49:07.000Z">>, faxe_time:to_iso8601(Result)).
+parse_datetime_1_binary_test() ->
+   Dt = <<"2022_01_18__15-49-07">>,
+   ?assertEqual(1642520947000, convert(Dt, <<"Y_m_d__H-M-S">>)).
+parse_datetime_milli_test() ->
+   Dt = <<"8/28/2033 8:03:45.576 PM">>,
+   Expected = 2008872225576,
+   Result = convert(Dt, "n/d/Y l:M:S.c p"),
+   ?assertEqual(Expected, Result),
+   ?assertEqual(<<"2033-08-28T20:03:45.576Z">>, faxe_time:to_iso8601(Result)).
+parse_datetime_micro_test() ->
+   Dt = <<"8/28/2033 8:03:45.576000 PM">>,
+   Expected = 2008872225576,
+   Result = convert(Dt, "n/d/Y l:M:S.u p"),
+   ?assertEqual(Expected, Result),
+   ?assertEqual(<<"2033-08-28T20:03:45.576Z">>, faxe_time:to_iso8601(Result)).
+parse_datetime_nano_test() ->
+   Dt = <<"8/28/2033 8:03:45.576823400 PM">>,
+   Expected = 2008872225577,
+   Result = convert(Dt, "n/d/Y l:M:S.f p"),
+   ?assertEqual(Expected, Result),
+   ?assertEqual(<<"2033-08-28T20:03:45.577Z">>, faxe_time:to_iso8601(Result)).
+parse_datetime_2_test() ->
+   Dt = <<"19.08.01  17:33:44,867000 ">>,
+   Expected = 998242424867,
+   Result = convert(Dt, "d.m.y  H:M:S,u "),
+   ?assertEqual(Expected, Result),
+   ?assertEqual(<<"2001-08-19T17:33:44.867Z">>, faxe_time:to_iso8601(Result)).
+parse_datetime_3_test() ->
+   Dt = <<"Mon, 15 Jun 2009 20:45:30 GMT">>,
+   Expected = 1245098730000,
+   Result = convert(Dt, "a, d b Y H:M:S Z"),
+   ?assertEqual(Expected, Result),
+   ?assertEqual(<<"2009-06-15T20:45:30.000Z">>, faxe_time:to_iso8601(Result)).
+parse_datetime_nomatch_test() ->
+   Dt = "2022_01_18__15-49",
+   ?assertEqual({error, no_match}, convert(Dt, "Y_M_d__H-M-S")).
+
+
 -endif.
 
 
