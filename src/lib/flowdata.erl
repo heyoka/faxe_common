@@ -676,6 +676,8 @@ is_root_path(_) ->
 -spec set_root(#data_point{}|#data_batch{}, binary()|tuple()|undefined) -> #data_point{}.
 set_root(Item, undefined) ->
    Item;
+set_root(Item, <<>>) ->
+   Item;
 set_root(Batch = #data_batch{points = Points}, NewRoot) when is_binary(NewRoot) orelse is_tuple(NewRoot) ->
    NewPoints = [set_root(P, NewRoot) || P <- Points],
    Batch#data_batch{points = NewPoints};

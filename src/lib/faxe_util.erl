@@ -66,10 +66,11 @@ host_with_protocol(Host, Protocol) when is_binary(Host) ->
 %% @doc check if a given binary string is a prefix, if not prepend it
 -spec prefix_binary(binary(), binary()) -> binary().
 prefix_binary(Bin, Prefix) when is_binary(Bin), is_binary(Prefix) ->
-      case string:find(Bin, Prefix) of
-         nomatch -> <<Prefix/binary, Bin/binary>>;
-         _ -> Bin
-      end.
+   Len = string:length(Prefix),
+   case binary:longest_common_prefix([Prefix, Bin]) of
+      Len -> Bin;
+      _ -> <<Prefix/binary, Bin/binary>>
+   end.
 
 %% @doc clean an sql statement
 -spec clean_query(binary()) -> binary().
