@@ -302,7 +302,12 @@ do_check({max_param_count, Keys, Max}, Opts, Mod) ->
    lists:foreach(F, Keys);
 
 %% check if exactly one of the required parameters is given
+do_check({one_or_none_params, Keys}, Opts, Mod) ->
+   %% get the number of non-undefined Keys
+   do_check({check_one_params, Keys, true}, Opts, Mod);
 do_check({one_of_params, Keys}, Opts, Mod) ->
+   do_check({check_one_params, Keys, false}, Opts, Mod);
+do_check({check_one_params, Keys, AllowNone}, Opts, Mod) ->
 %%   lager:notice("do check: ~p", [[{one_of_params, Keys}, Opts, Mod]]),
    OptsKeys = maps:keys(Opts),
    Has =
@@ -311,6 +316,7 @@ do_check({one_of_params, Keys}, Opts, Mod) ->
                 end, Keys),
 %%   lager:notice("Has: ~p",[Has]),
    case length(Has) of
+      0 when AllowNone == true -> ok;
       1 -> ok;
       _ ->
          KeysBinList = ["'" ++ atom_to_list(K) ++ "'" || K <- Keys],
