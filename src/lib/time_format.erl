@@ -57,7 +57,10 @@ convert(Input, Format) ->
 
 
 parse_error(Input, Format) ->
-   M = io_lib:format("~p cannot parse ~p with format ~p",[?MODULE, Input, Format]),
+   M = iolist_to_binary(
+      [<<"cannot parse '">>, faxe_util:to_bin(Input), <<"' with format '">>, faxe_util:to_bin(Format), <<"'">>]
+   ),
+%%   M = io_lib:format("~s cannot parse ~p with format ~p",[faxe_util:to_bin(?MODULE), Input, Format]),
    erlang:error(M).
 
 
