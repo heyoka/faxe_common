@@ -49,7 +49,7 @@ convert(Input, ?TF_CONVTRACK_DT) ->
 convert(Input, Format) ->
    case datestring:parse_datetime(Format, Input) of
       {ok, DateTime} -> faxe_time:to_ms(DateTime);
-      E -> E
+      E -> erlang:error(E)
    end.
 
 
