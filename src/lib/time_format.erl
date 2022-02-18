@@ -49,9 +49,16 @@ convert(Input, ?TF_CONVTRACK_DT) ->
 convert(Input, Format) ->
    case datestring:parse_datetime(Format, Input) of
       {ok, DateTime} -> faxe_time:to_ms(DateTime);
-      E -> erlang:error(E)
-   end.
+      _E ->
+         parse_error(Input, Format)
+   end;
+convert(Input, Format) ->
+   parse_error(Input, Format).
 
+
+parse_error(Input, Format) ->
+   M = io_lib:format("~p cannot parse ~p with format ~p",[?MODULE, Input, Format]),
+   erlang:error(M).
 
 
 %% <<"1565343079.173588">>
