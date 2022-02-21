@@ -325,8 +325,15 @@ member(_Ele, _) -> false.
 not_member(Ele, Coll) -> not member(Ele, Coll).
 
 %%% maps
--spec map_get(binary(), map()) -> term().
-map_get(Key, Map) -> maps:get(Key, Map, undefined).
+-spec map_get(binary(), map()|binary()) -> term().
+map_get(Key, Map) when is_map(Map) ->
+   maps:get(Key, Map, undefined);
+map_get(Key, Json) when is_binary(Json) ->
+   case (catch jiffy:decode(Json, [return_maps])) of
+      Map when is_map(Map) ->
+         map_get(Key, Map);
+      _ -> undefined
+   end.
 
 -spec size(map()|list()) -> integer().
 size(Map) when is_map(Map) ->
