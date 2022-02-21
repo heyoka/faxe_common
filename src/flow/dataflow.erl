@@ -301,20 +301,19 @@ do_check({max_param_count, Keys, Max}, Opts, Mod) ->
        end,
    lists:foreach(F, Keys);
 
-%% check if exactly one of the required parameters is given
+
+%% check if at most one of the parameters is given
 do_check({one_or_none_params, Keys}, Opts, Mod) ->
-   %% get the number of non-undefined Keys
    do_check({check_one_params, Keys, true}, Opts, Mod);
+%% check if exactly one of the required parameters is given
 do_check({one_of_params, Keys}, Opts, Mod) ->
    do_check({check_one_params, Keys, false}, Opts, Mod);
 do_check({check_one_params, Keys, AllowNone}, Opts, Mod) ->
-%%   lager:notice("do check: ~p", [[{one_of_params, Keys}, Opts, Mod]]),
    OptsKeys = maps:keys(Opts),
    Has =
    lists:filter(fun(E) ->
       lists:member(E, OptsKeys) andalso maps:get(E, Opts) /= undefined
                 end, Keys),
-%%   lager:notice("Has: ~p",[Has]),
    case length(Has) of
       0 when AllowNone == true -> ok;
       1 -> ok;
