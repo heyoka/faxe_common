@@ -243,6 +243,11 @@ to_iso8601(Ts) -> faxe_time:to_iso8601(Ts).
 -spec to_rfc3339(non_neg_integer()) -> binary().
 to_rfc3339(Ts) -> time_format:to_rfc3339(Ts).
 
+
+dt_parse(Ts, Format) ->
+   time_format:convert(Ts, Format).
+
+%% @deprecated
 time_convert(Ts, Format) ->
    time_format:convert(Ts, Format).
 
