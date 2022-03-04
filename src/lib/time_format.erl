@@ -76,7 +76,7 @@ parse_error(Input, Format) ->
 -spec float_nano_to_ms(binary()) -> faxe_time:timestamp().
 float_nano_to_ms(BinString) when is_binary(BinString)->
    F = binary_to_float(BinString),
-   float_micro_to_ms(F);
+   float_nano_to_ms(F);
 float_nano_to_ms(Float) when is_float(Float) ->
    erlang:round(Float*1000).
 
@@ -181,6 +181,12 @@ float_micro_to_ms_test() ->
    ?assertEqual(1565343079174, float_micro_to_ms(<<"1565343079.173588">>)).
 float_micro_to_ms2_test() ->
    ?assertEqual(1574067119038, float_micro_to_ms(<<"1574067119.037648">>)).
+float_nano_to_ms_test() ->
+   ?assertEqual(1574067119038, float_nano_to_ms(1574067119.037648112)).
+float_nano_to_ms_2_test() ->
+   ?assertEqual(1574067119037, float_nano_to_ms(1574067119.037448972)).
+float_nano_to_ms_bin_test() ->
+   ?assertEqual(1574067119038, float_nano_to_ms(<<"1574067119.037648112">>)).
 iso8601_to_ms_test() ->
    Dt = <<"2011-10-05T14:48:00.000Z">>,
    ?assertEqual(1317826080000, iso8601_to_ms(Dt)).
