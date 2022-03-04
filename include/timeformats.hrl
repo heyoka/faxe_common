@@ -9,7 +9,10 @@
 -author("heyoka").
 
 -define(TF_TS_MILLI, <<"millisecond">>).
+-define(TF_TS_MICRO, <<"microsecond">>).
+-define(TF_TS_NANO, <<"nanosecond">>).
 -define(TF_TS_SECOND, <<"second">>).
+-define(TF_TS_FLOAT_NANO, <<"float_nano">>).
 -define(TF_TS_FLOAT_MICRO, <<"float_micro">>).
 -define(TF_TS_FLOAT_MILLI, <<"float_millisecond">>).
 -define(TF_ISO8601, <<"ISO8601">>).

@@ -21,6 +21,8 @@
 -export([
    float_micro_to_ms/1,
    millisecond_to_ms/1,
+   microsecond_to_ms/1,
+   nanosecond_to_ms/1,
    second_to_ms/1,
    float_millisecond_to_ms/1,
    rfc3339_to_ms/1,
@@ -34,8 +36,14 @@
 
 convert(Input, ?TF_TS_MILLI) ->
    millisecond_to_ms(Input);
+convert(Input, ?TF_TS_MICRO) ->
+   microsecond_to_ms(Input);
+convert(Input, ?TF_TS_NANO) ->
+   nanosecond_to_ms(Input);
 convert(Input, ?TF_TS_SECOND) ->
    second_to_ms(Input);
+convert(Input, ?TF_TS_FLOAT_NANO) ->
+   float_nano_to_ms(Input);
 convert(Input, ?TF_TS_FLOAT_MICRO) ->
    float_micro_to_ms(Input);
 convert(Input, ?TF_TS_FLOAT_MILLI) ->
@@ -65,6 +73,14 @@ parse_error(Input, Format) ->
 
 
 %% <<"1565343079.173588">>
+-spec float_nano_to_ms(binary()) -> faxe_time:timestamp().
+float_nano_to_ms(BinString) when is_binary(BinString)->
+   F = binary_to_float(BinString),
+   float_micro_to_ms(F);
+float_nano_to_ms(Float) when is_float(Float) ->
+   erlang:round(Float*1000).
+
+%% <<"1565343079.173588">>
 -spec float_micro_to_ms(binary()) -> faxe_time:timestamp().
 float_micro_to_ms(BinString) when is_binary(BinString)->
    F = binary_to_float(BinString),
@@ -89,6 +105,18 @@ millisecond_to_ms(BinString) when is_binary(BinString) ->
    millisecond_to_ms(binary_to_integer(BinString));
 millisecond_to_ms(Int) when is_integer(Int) ->
    Int.
+
+%% 1565343079173
+microsecond_to_ms(BinString) when is_binary(BinString) ->
+   microsecond_to_ms(binary_to_integer(BinString));
+microsecond_to_ms(Int) when is_integer(Int) ->
+   erlang:round(Int/1000).
+
+%% 1565343079173
+nanosecond_to_ms(BinString) when is_binary(BinString) ->
+   nanosecond_to_ms(binary_to_integer(BinString));
+nanosecond_to_ms(Int) when is_integer(Int) ->
+   erlang:round(Int/1000/1000).
 
 %% @doc note: when the iso string is not well formatted, you will lose millisecond precision
 %%
@@ -137,6 +165,16 @@ start_test() ->
    application:ensure_all_started(qdate).
 second_to_ms_test() ->
    ?assertEqual(1565343079000, second_to_ms(1565343079)).
+millisecond_to_ms_test() ->
+   ?assertEqual(1565343079000, millisecond_to_ms(1565343079000)).
+millisecond_to_ms_bin_test() ->
+   ?assertEqual(1565343079000, millisecond_to_ms(1565343079000)).
+microsecond_to_ms_test() ->
+   ?assertEqual(1565343079000, microsecond_to_ms(1565343079000456)).
+nanosecond_to_ms_test() ->
+   ?assertEqual(1565378079000, nanosecond_to_ms(1565378079000456159)).
+nanosecond_to_ms_bin_test() ->
+   ?assertEqual(1565343079000, nanosecond_to_ms(<<"1565343079000456159">>)).
 float_millisecond_to_ms_test() ->
    ?assertEqual(1565343079173, float_millisecond_to_ms(1565343079.173)).
 float_micro_to_ms_test() ->
@@ -193,7 +231,8 @@ parse_datetime_3_test() ->
    ?assertEqual(<<"2009-06-15T20:45:30.000Z">>, faxe_time:to_iso8601(Result)).
 parse_datetime_nomatch_test() ->
    Dt = "2022_01_18__15-49",
-   ?assertEqual({error, no_match}, convert(Dt, "Y_M_d__H-M-S")).
+   ?assertError(<<"cannot parse '2022_01_18__15-49' with format 'Y_M_d__H-M-S'">>,
+      convert(Dt, "Y_M_d__H-M-S")).
 
 
 -endif.

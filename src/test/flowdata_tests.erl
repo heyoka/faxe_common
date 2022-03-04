@@ -850,11 +850,11 @@ to_num_point_path_test() ->
    #{<<"meta">> => #{<<"a">> => 1}, <<"val1">> => <<"2342.55">>, <<"val2">> => <<"heyy11">>}},
    ?assertEqual(Expected, flowdata:to_num(P, <<"meta">>)).
 
-to_num_point_path_2_test() ->
-   P = to_num_point(),
-   Expected = #data_point{fields =
-   #{<<"meta">> => #{<<"a">> => 1}, <<"val1">> => <<"2342.55">>, <<"val2">> => <<"heyy11">>}},
-   ?assertEqual(Expected, flowdata:to_num(P, <<"data.values">>)).
+%%to_num_point_path_2_test() ->
+%%   P = to_num_point(),
+%%   Expected = #data_point{fields =
+%%   #{<<"meta">> => #{<<"a">> => 1}, <<"val1">> => <<"2342.55">>, <<"val2">> => <<"heyy11">>}},
+%%   ?assertEqual(Expected, flowdata:to_num(P, <<"data.values">>)).
 
 to_num_map_test() ->
    P = to_num_point(),
