@@ -10,6 +10,7 @@
 %% API
 -compile(nowarn_export_all).
 -compile(export_all).
+-compile({no_auto_import,[map_get/2]}).
 %%% @doc
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -340,6 +341,15 @@ size(Map) when is_map(Map) ->
    maps:size(Map);
 size(List) when is_list(List) ->
    length(List).
+
+%% select a value from a list of maps with a key-value pair
+%% maps_list_select
+select(JsnStruct, KeyField, KeyValue, ReturnField) when is_list(JsnStruct) ->
+   case jsn:select({value, ReturnField}, {KeyField, KeyValue}, JsnStruct) of
+      [Res] -> Res;
+      _ -> undefined
+   end.
+
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% lambda state functions
