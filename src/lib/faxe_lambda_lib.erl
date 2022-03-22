@@ -367,3 +367,6 @@ mem_lookup(Key) ->
       Other -> Other
    end,
    Res.
+
+mem(Key) ->
+   ls_mem(Key).
