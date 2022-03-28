@@ -15,7 +15,7 @@
 -include("faxe_common.hrl").
 
 -define(SERVER, ?MODULE).
--define(DATA_FORMAT, <<"92.003">>).
+-define(DATA_FORMAT, <<"0092.0003">>).
 %%
 %% status: 0 = disconnected, 1 = connected, 2 = connecting
 -record(conreg, {
