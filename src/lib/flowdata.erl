@@ -466,6 +466,8 @@ set_tags(B = #data_batch{points = Points}, KeysValues) when is_list(KeysValues) 
 %% data_points in the data_batch
 %% @end
 -spec delete_field(#data_point{}|#data_batch{}, binary()) -> #data_point{} | #data_batch{}.
+delete_field(#data_point{fields = Fields}=P, FieldName) when is_map_key(FieldName, Fields) ->
+   P#data_point{fields = maps:without([FieldName], Fields)};
 delete_field(#data_point{fields = Fields}=P, FieldName) ->
    case field(P, FieldName) of
       undefined -> P;

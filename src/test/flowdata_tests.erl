@@ -88,6 +88,15 @@ delete_field_value_deep_test() ->
          <<"var">> => 44}
    ).
 
+
+%% wait for fix in jsn library ....
+delete_field_empty_object_test() ->
+   P = #data_point{ts = 1234567891234, id = <<"324392i09i329i2df4">>,
+      fields = #{<<"var">> => 44, <<"data">> => #{}}},
+   Path = <<"data">>,
+   NewPoint = flowdata:delete_field(P, Path),
+   ?assertEqual(#{<<"var">> => 44}, NewPoint#data_point.fields).
+
 delete_field_undefined_test() ->
    P = #data_point{ts = 1234567891234, id = <<"324392i09i329i2df4">>,
       fields = #{<<"val">> => <<"some_string_value">>, <<"var">> => 44}},
