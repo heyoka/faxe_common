@@ -80,7 +80,7 @@
    ts/2,
    merge/1,
    set_dtag/2,
-   to_num/1, to_num/2]).
+   to_num/1, to_num/2, with/2]).
 
 -define(DEFAULT_FIELDS, [<<"id">>, <<"df">>, <<"ts">>]).
 -define(DEFAULT_TS_FIELD, <<"ts">>).
@@ -284,6 +284,15 @@ fields(#data_point{fields = _Fields}, []) ->
    [];
 fields(#data_point{fields = Fields}, PathList) when is_list(PathList) ->
    jsn_getlist(PathList, Fields).
+
+%% like maps:with but for deeply nested data
+-spec with(#data_point{}|#data_batch{}, list()) -> #data_point{}|#data_batch{}.
+with(#data_point{fields = Fields} = P, PathList) when is_list(PathList) ->
+   Kept = jsn_with(PathList, Fields),
+   P#data_point{fields = Kept};
+with(#data_batch{points = Points} = B, PathList) when is_list(PathList) ->
+   NewPoints = [with(P, PathList) || P <- Points],
+   B#data_batch{points = NewPoints}.
 
 %% get the timestamps and fieldvalues  as {TsList, ValList} from a data_batch, where undefineds are not included
 -spec tss_fields(#data_batch{}, binary()|tuple()) -> {list(), list()}.
@@ -623,6 +632,13 @@ jsn_deletelist(_Paths, Map) when map_size(Map) == 0 ->
    Map;
 jsn_deletelist(Paths, Map) ->
    jsn:delete_list(paths(Paths), Map).
+
+jsn_with([], Map) ->
+   Map;
+jsn_with(_Paths, Map) when map_size(Map) == 0->
+   Map;
+jsn_with(Paths, Map) ->
+   jsn:with(paths(Paths), Map).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 

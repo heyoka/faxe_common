@@ -89,13 +89,20 @@ delete_field_value_deep_test() ->
    ).
 
 
-%% wait for fix in jsn library ....
 delete_field_empty_object_test() ->
    P = #data_point{ts = 1234567891234, id = <<"324392i09i329i2df4">>,
       fields = #{<<"var">> => 44, <<"data">> => #{}}},
    Path = <<"data">>,
    NewPoint = flowdata:delete_field(P, Path),
    ?assertEqual(#{<<"var">> => 44}, NewPoint#data_point.fields).
+
+%% wait for fix in jsn library
+%%delete_field_empty_object_deep_test() ->
+%%   P = #data_point{ts = 1234567891234, id = <<"324392i09i329i2df4">>,
+%%      fields = #{<<"var">> => 44, <<"data">> => #{<<"var1">> => #{}}}},
+%%   Path = <<"data.var1">>,
+%%   NewPoint = flowdata:delete_field(P, Path),
+%%   ?assertEqual(#{<<"var">> => 44, <<"data">> => #{}}, NewPoint#data_point.fields).
 
 delete_field_undefined_test() ->
    P = #data_point{ts = 1234567891234, id = <<"324392i09i329i2df4">>,
@@ -135,6 +142,59 @@ delete_fields_undefined_test() ->
       }
 
    ).
+
+with_base_test() ->
+   P = #data_point{ts = 1234567891234,
+      fields = #{<<"val">> => deep_val(), <<"var">> => 44, <<"data">> => #{<<"step1">> => 1, <<"step2">> => 2}}},
+   Paths = [<<"var">>, <<"data.step2">>],
+   NewPoint = flowdata:with(P, Paths),
+   ?assertEqual(
+      #data_point{ts = 1234567891234,
+         fields = #{<<"var">> => 44, <<"data">> => #{<<"step2">> => 2}}
+      },
+      NewPoint
+   ).
+
+with_undefined_test() ->
+   P = #data_point{ts = 1234567891234,
+      fields = #{<<"val">> => deep_val(), <<"var">> => 44, <<"data">> => #{<<"step1">> => 1, <<"step2">> => 2}}},
+   Paths = [<<"var">>, <<"data.step2">>, <<"data.step3">>],
+   NewPoint = flowdata:with(P, Paths),
+   ?assertEqual(
+      #data_point{ts = 1234567891234,
+         fields = #{<<"var">> => 44, <<"data">> => #{<<"step2">> => 2}}
+      },
+      NewPoint
+   ).
+
+with_empty_test() ->
+   P = #data_point{ts = 1234},
+   Paths = [<<"var">>, <<"data.step2">>, <<"data.step3">>],
+   NewPoint = flowdata:with(P, Paths),
+   ?assertEqual(
+      #data_point{ts = 1234, fields = #{}},
+      NewPoint
+   ).
+
+
+with_batch_test() ->
+   P = #data_point{ts = 1234567891234,
+      fields = #{<<"val">> => deep_val(), <<"var">> => 44, <<"data">> => #{<<"step1">> => 1, <<"step2">> => 2}}},
+   P2 = #data_point{ts = 1234567891235,
+      fields = #{<<"var">> => 44, <<"data">> => #{<<"step1">> => 1, <<"step3">> => 3}}},
+   Paths = [<<"var">>, <<"data.step2">>, <<"data.step3">>],
+   NewPoint = flowdata:with(#data_batch{points = [P, P2]}, Paths),
+   ?assertEqual(
+      #data_batch{points = [#data_point{ts=1234567891234,
+         fields = #{<<"data">> => #{<<"step2">> => 2},<<"var">> => 44}},
+         #data_point{ts=1234567891235, fields =
+         #{<<"data">> => #{<<"step3">> => 3},<<"var">> => 44}}
+      ]
+      },
+      NewPoint
+   ).
+
+
 
 rename_field_basic_test() ->
    P = #data_point{ts = 1234567891234, id = <<"324392i09i329i2df4">>,
