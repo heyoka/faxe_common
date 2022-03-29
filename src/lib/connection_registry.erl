@@ -155,4 +155,4 @@ publish(#conreg{connected = Connected, status = Status, flowid = FId,
     <<"df">> => ?DATA_FORMAT
   },
   P = #data_point{ts = faxe_time:now(), fields = Fields}, 
-  gen_event:notify(conn_status, {{FId, NId}, P}).
+  catch gen_event:notify(conn_status, {{FId, NId}, P}).
