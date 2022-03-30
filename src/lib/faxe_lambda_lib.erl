@@ -342,14 +342,43 @@ size(Map) when is_map(Map) ->
 size(List) when is_list(List) ->
    length(List).
 
-%% select a value from a list of maps with a key-value pair
-%% maps_list_select
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% json arrays
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% maps_list_select @ not in use, delete me !
 select(JsnStruct, KeyField, KeyValue, ReturnField) when is_list(JsnStruct) ->
    case jsn:select({value, ReturnField}, {KeyField, KeyValue}, JsnStruct) of
       [Res] -> Res;
       _ -> undefined
    end.
 
+%%%%%%%%% new selects
+%% @doc
+%% given a list of maps(json array), try to return all or exactly one entry with the given key-value criteria (Where)
+mem_select(ReturnField, [{_K, _V}|_]=Where, Mem0) ->
+   Mem = get_mem(Mem0),
+   case jsn:select({value, ReturnField}, Where, Mem) of
+      [Res] -> Res;
+      Res when is_list(Res) -> Res;
+      _ -> undefined
+   end.
+
+
+%% @doc
+%% given a list of maps, return all entries found at path 'Field'
+mem_select_all(Field, Mem0) ->
+   Mem = get_mem(Mem0),
+   case jsn:select({value, Field}, Mem) of
+      Res when is_list(Res) -> Res;
+      _ -> undefined
+   end.
+
+
+get_mem(Mem) when is_binary(Mem) ->
+   ls_mem(Mem);
+get_mem(Mem) when is_list(Mem) ->
+   Mem.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% lambda state functions
