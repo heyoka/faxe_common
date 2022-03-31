@@ -332,7 +332,7 @@ not_member(Ele, Coll) -> not member(Ele, Coll).
 
 %%% maps
 -spec map_get(binary(), map()|binary()) -> term().
-map_get(Key, Map) when is_map(Map) ->
+map_get(Key, Map) when is_map(Map) orelse is_binary(Map) ->
    maps:get(Key, get_mem(Map), undefined).
 
 -spec size(map()|list()) -> integer().
