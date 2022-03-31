@@ -333,8 +333,10 @@ not_member(Ele, Coll) -> not member(Ele, Coll).
 %%% maps
 -spec map_get(binary(), map()|binary()) -> term().
 map_get(Key, Map) when is_map(Map)  ->
+   lager:notice("[~p] map_get with (~p,~p)",[?MODULE, Key, Map]),
    maps:get(Key, Map, undefined);
 map_get(Key, JBin) when is_binary(JBin) ->
+   lager:notice("[~p] map_get with (~p,~p)",[?MODULE, Key, JBin]),
    maps:get(Key, get_mem(JBin), undefined).
 
 -spec size(map()|list()) -> integer().
