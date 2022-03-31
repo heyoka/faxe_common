@@ -348,7 +348,7 @@ list_join(L) when is_list(L) ->
 
 -spec list_join(binary(), list()) -> string().
 list_join(Sep, L) when is_list(L) ->
-   erlang:iolist_to_binary(lists:join(Sep, L)).
+   lists:join(Sep, L).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% json arrays
