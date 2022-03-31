@@ -385,14 +385,32 @@ mem_select_all(Field, Mem0) ->
 
 
 -spec get_mem(binary()|list()|map()) -> list()|map().
-get_mem(Mem) when is_binary(Mem) ->
-   from_json_string(Mem);
-get_mem(Mem) when is_list(Mem) orelse is_map(Mem) ->
+get_mem(Mem) ->
+   {T, Res} = timer:tc(fun do_get_mem/1, [Mem]),
+   lager:warning("took ~p to proc",[T]),
+   Res.
+
+do_get_mem(Mem) when is_binary(Mem) ->
+   H = erlang:phash2(Mem),
+   case lookup_json(H) of
+      V when is_list(V); is_map(V) -> V;
+      _ ->
+         Decoded = from_json_string(Mem),
+         ets:insert(decoded_json, {H, Decoded}),
+         Decoded
+   end;
+do_get_mem(Mem) when is_list(Mem) orelse is_map(Mem) ->
    Mem.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% lambda state functions
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+lookup_json(Hash) ->
+   case ets:lookup(decoded_json, Hash) of
+      [{Hash, Val}] -> Val;
+      Other -> Other
+   end.
+
 ls_mem_list(Key) ->
    mem_lookup(Key).
 ls_mem_set(Key) ->
