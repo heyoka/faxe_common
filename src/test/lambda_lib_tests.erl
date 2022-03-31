@@ -19,14 +19,14 @@
 
 
 json_list_data() ->
-  Mapping = <<"[
+  <<"[
   {\"key\": \"cond_vac\", \"dataformat\": \"0001.1110\", \"stream\":
   \"23u23jhr2iohjrfo23\", \"topic\" : \"data/0x867/23u23jhr2iohjrfo23/0001.1110\"},
   {\"key\": \"cond_scale\", \"dataformat\": \"0001.1120\", \"stream\": \"23898hduh2diuihd\", \"topic\" :
   \"data/0x867/23898hduh2diuihd/0001.1120\"},
   {\"key\": \"cond_robot\", \"dataformat\": \"0001.1130\",
-   \"stream\": \"le232343242342343\", \"topic\" : \"le232343242342343/0001.1130\"}\n]">>,
-  jiffy:decode(Mapping, [return_maps]).
+   \"stream\": \"le232343242342343\", \"topic\" : \"le232343242342343/0001.1130\"}\n]">>
+.
 
 mem_select_jarray_1_test() ->
   TheList = json_list_data(),

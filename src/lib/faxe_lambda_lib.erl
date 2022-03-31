@@ -333,13 +333,7 @@ not_member(Ele, Coll) -> not member(Ele, Coll).
 %%% maps
 -spec map_get(binary(), map()|binary()) -> term().
 map_get(Key, Map) when is_map(Map) ->
-   maps:get(Key, Map, undefined);
-map_get(Key, Json) when is_binary(Json) ->
-   case (catch jiffy:decode(Json, [return_maps])) of
-      Map when is_map(Map) ->
-         map_get(Key, Map);
-      _ -> undefined
-   end.
+   maps:get(Key, get_mem(Map), undefined).
 
 -spec size(map()|list()) -> integer().
 size(Map) when is_map(Map) ->
@@ -363,17 +357,12 @@ surround(Wrapper, String) when is_binary(Wrapper) andalso is_binary(String) ->
 surround(Wrapper, L) when is_binary(Wrapper) andalso is_list(L) ->
    [surround(Wrapper, E) || E <- L].
 
+list_to_string(List) when is_list(List) ->
+   list_join(<<",">>, surround(<<"'">>, List)).
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% json arrays
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%% maps_list_select @ not in use, delete me !
-select(JsnStruct, KeyField, KeyValue, ReturnField) when is_list(JsnStruct) ->
-   case jsn:select({value, ReturnField}, {KeyField, KeyValue}, JsnStruct) of
-      [Res] -> Res;
-      _ -> undefined
-   end.
 
-%%%%%%%%% new selects
 %% @doc
 %% given a list of maps(json array), try to return all or exactly one entry with the given key-value criteria (Where)
 mem_select(ReturnField, [{_K, _V}|_]=Where, Mem0) ->
@@ -395,9 +384,10 @@ mem_select_all(Field, Mem0) ->
    end.
 
 
+-spec get_mem(binary()|list()|map()) -> list()|map().
 get_mem(Mem) when is_binary(Mem) ->
-   ls_mem(Mem);
-get_mem(Mem) when is_list(Mem) ->
+   from_json_string(Mem);
+get_mem(Mem) when is_list(Mem) orelse is_map(Mem) ->
    Mem.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -410,12 +400,17 @@ ls_mem_set(Key) ->
 ls_mem(Key) ->
    mem_lookup(Key).
 mem_lookup(Key) ->
-   Res =
-   case ets:lookup(graph_node_registry:get_graph_table(), Key) of
-      [{Key, Val}] -> Val;
-      Other -> Other
-   end,
-   Res.
+   case graph_node_registry:get_graph_table() of
+      {error, _What} -> lager:notice("could not find graph ets table: ~p for ~p",[{Key, self()}]), [];
+      Tab ->
+      Res =
+         case ets:lookup(Tab, Key) of
+            [{Key, Val}] -> Val;
+            Other -> Other
+         end,
+      Res
+   end.
+
 
 mem(Key) ->
    ls_mem(Key).
