@@ -332,8 +332,10 @@ not_member(Ele, Coll) -> not member(Ele, Coll).
 
 %%% maps
 -spec map_get(binary(), map()|binary()) -> term().
-map_get(Key, Map) when is_map(Map) orelse is_binary(Map) ->
-   maps:get(Key, get_mem(Map), undefined).
+map_get(Key, Map) when is_map(Map)  ->
+   maps:get(Key, Map, undefined);
+map_get(Key, JBin) when is_binary(JBin) ->
+   maps:get(Key, get_mem(JBin), undefined).
 
 -spec size(map()|list()) -> integer().
 size(Map) when is_map(Map) ->
@@ -392,8 +394,10 @@ get_mem(Mem) ->
 
 do_get_mem(Mem) when is_binary(Mem) ->
    H = erlang:phash2(Mem),
+   lager:info("mem hash is: ~p",[H]),
    case lookup_json(H) of
-      V when is_list(V); is_map(V) -> V;
+      V when is_list(V); is_map(V) ->
+         V;
       _ ->
          Decoded = from_json_string(Mem),
          ets:insert(decoded_json, {H, Decoded}),
