@@ -183,14 +183,6 @@ undefined(Val) ->
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% additional string functions
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%% replace every Match with every Replace in a string (binary())
-str_replace(String, Pattern, Replacement) when is_binary(Pattern), is_binary(Replacement)->
-   estr:str_replace(String, Pattern, Replacement);
-str_replace(String, [], []) ->
-   String;
-str_replace(String, [Match|MRest], [Replace|RRest]) when is_binary(String), is_binary(Match), is_binary(Replace) ->
-   str_replace(binary:replace(String, Match, Replace, [global]), MRest, RRest).
-
 
 topic_part(Topic, Index) when is_binary(Topic), is_integer(Index) ->
    topic_part(Topic, Index, <<"/">>).
