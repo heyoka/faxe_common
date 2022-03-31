@@ -342,6 +342,13 @@ size(Map) when is_map(Map) ->
 size(List) when is_list(List) ->
    length(List).
 
+-spec list_join(list()) -> string().
+list_join(L) when is_list(L) ->
+   list_join(<<",">>, L).
+
+-spec list_join(binary(), list()) -> string().
+list_join(Sep, L) when is_list(L) ->
+   erlang:iolist_to_binary(lists:join(Sep, L)).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% json arrays
@@ -395,6 +402,7 @@ mem_lookup(Key) ->
       [{Key, Val}] -> Val;
       Other -> Other
    end,
+   lager:info("mem_lookup gives:~p",[Res]),
    Res.
 
 mem(Key) ->
