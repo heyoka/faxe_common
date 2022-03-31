@@ -348,7 +348,15 @@ list_join(L) when is_list(L) ->
 
 -spec list_join(binary(), list()) -> string().
 list_join(Sep, L) when is_list(L) ->
-   lists:join(Sep, L).
+   erlang:iolist_to_binary(lists:join(Sep, L)).
+
+%% @doc
+%% wrap a string or a list of strings with 'Wrapper', perpends and appends Wrapper to every string
+-spec wrap(binary(), list()|binary()) -> binary()|list().
+wrap(Wrapper, String) when is_binary(Wrapper) andalso is_binary(String) ->
+   <<Wrapper/binary, String/binary, Wrapper/binary>>;
+wrap(Wrapper, L) when is_binary(Wrapper) andalso is_list(L) ->
+   [wrap(Wrapper, E) || E <- L].
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% json arrays
