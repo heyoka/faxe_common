@@ -398,9 +398,10 @@ do_get_mem(Mem) when is_binary(Mem) ->
    H = erlang:phash2(Mem),
    lager:info("mem hash is: ~p",[H]),
    case lookup_json(H) of
-      V when is_list(V); is_map(V) ->
+      V when is_list(V) orelse is_map(V) ->
          V;
-      _ ->
+      What ->
+         lager:warning("got What: ~p",[What]),
          Decoded = from_json_string(Mem),
          ets:insert(decoded_json, {H, Decoded}),
          Decoded
