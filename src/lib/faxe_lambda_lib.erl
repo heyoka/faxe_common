@@ -415,6 +415,7 @@ do_get_mem(Mem) when is_list(Mem) orelse is_map(Mem) ->
 lookup_json(Hash) ->
    case ets:lookup(decoded_json, Hash) of
       [{Hash, Val}] -> Val;
+      [] -> undefined;
       Other -> Other
    end.
 
