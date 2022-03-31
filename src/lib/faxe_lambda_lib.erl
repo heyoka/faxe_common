@@ -377,7 +377,6 @@ select(JsnStruct, KeyField, KeyValue, ReturnField) when is_list(JsnStruct) ->
 %% @doc
 %% given a list of maps(json array), try to return all or exactly one entry with the given key-value criteria (Where)
 mem_select(ReturnField, [{_K, _V}|_]=Where, Mem0) ->
-   estr:str_replace(),
    Mem = get_mem(Mem0),
    case jsn:select({value, ReturnField}, Where, Mem) of
       [Res] -> Res;
@@ -416,7 +415,6 @@ mem_lookup(Key) ->
       [{Key, Val}] -> Val;
       Other -> Other
    end,
-   lager:info("mem_lookup gives:~p",[Res]),
    Res.
 
 mem(Key) ->
