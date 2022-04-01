@@ -367,7 +367,7 @@ list_to_string(List) when is_list(List) ->
 
 %% @doc
 %% given a list of maps(json array), try to return all or exactly one entry with the given key-value criteria (Where)
-mem_select(ReturnField, [{_K, _V}|_]=Where, Mem0) ->
+select(ReturnField, [{_K, _V}|_]=Where, Mem0) ->
    Mem = get_mem(Mem0),
    case jsn:select({value, ReturnField}, Where, Mem) of
       [Res] -> Res;
@@ -378,7 +378,7 @@ mem_select(ReturnField, [{_K, _V}|_]=Where, Mem0) ->
 
 %% @doc
 %% given a list of maps, return all entries found at path 'Field'
-mem_select_all(Field, Mem0) ->
+select_all(Field, Mem0) ->
    Mem = get_mem(Mem0),
    case jsn:select({value, Field}, Mem) of
       Res when is_list(Res) -> Res;
@@ -394,12 +394,12 @@ get_mem(Mem) ->
 
 do_get_mem(Mem) when is_binary(Mem) ->
    H = erlang:phash2(Mem),
-   case lookup_json(H) of
+   case catch lookup_json(H) of
       V when is_list(V) orelse is_map(V) ->
          V;
       _ ->
          Decoded = from_json_string(Mem),
-         ets:insert(decoded_json, {H, Decoded}),
+         catch ets:insert(decoded_json, {H, Decoded}),
          Decoded
    end;
 do_get_mem(Mem) when is_list(Mem) orelse is_map(Mem) ->
