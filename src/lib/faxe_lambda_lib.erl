@@ -171,7 +171,7 @@ str_quote(String) when is_binary(String) ->
 %%   min/2,
 %%   max/2
 %%
-%%
+%% ... and much more
 %%% @end
 
 defined(Val) ->
@@ -323,12 +323,6 @@ random_float(N) ->
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% list/map functions
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
--spec member(binary()|number(), list()|map()) -> true|false.
-member(Ele, List) when is_list(List) -> lists:member(Ele, List);
-member(Ele, Map) when is_map(Map) andalso is_map_key(Ele, Map) -> true;
-member(_Ele, _) -> false.
--spec not_member(binary()|number(), list()|map()) -> true|false.
-not_member(Ele, Coll) -> not member(Ele, Coll).
 
 %%% maps
 -spec map_get(binary(), map()|binary()) -> term().
@@ -337,61 +331,35 @@ map_get(Key, Map) when is_map(Map)  ->
 map_get(Key, JBin) when is_binary(JBin) ->
    maps:get(Key, get_jsn(JBin), undefined).
 
--spec size(map()|list()) -> integer().
-size(Map) when is_map(Map) ->
-   maps:size(Map);
-size(List) when is_list(List) ->
-   length(List).
-
--spec list_join(list()) -> string().
-list_join(L) when is_list(L) ->
-   list_join(<<",">>, L).
-
--spec list_join(binary(), list()) -> string().
-list_join(Sep, L) when is_list(L) ->
-   erlang:iolist_to_binary(lists:join(Sep, L)).
-
-%% @doc
-%% surround a string or a list of strings with 'Wrapper', perpends and appends Wrapper to every string
--spec surround(binary(), list()|binary()) -> binary()|list().
-surround(Wrapper, String) when is_binary(Wrapper) andalso is_binary(String) ->
-   <<Wrapper/binary, String/binary, Wrapper/binary>>;
-surround(Wrapper, L) when is_binary(Wrapper) andalso is_list(L) ->
-   [surround(Wrapper, E) || E <- L].
-
-list_to_string(List) when is_list(List) ->
-   list_join(<<",">>, surround(<<"'">>, List)).
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% json arrays
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+select_first(ReturnField, Mem) ->
+   select_first(ReturnField, [], Mem).
+select_first(ReturnField, Where, Mem) ->
+   select_first(ReturnField, Where, Mem, undefined).
+select_first(ReturnField, Where, Mem, Default) ->
+   case select(ReturnField, Where, Mem, Default) of
+      [Res|_] -> Res;
+      Else -> Else
+   end.
+
+%% @doc
+%% given a list of maps(json array), try to return all entries with the given key-value criteria (Where)
+%% the Where param: either an empty list [], or a list of two-tuples
 select(ReturnField, Mem) ->
    select(ReturnField, [], Mem).
 select(ReturnField, Where, Mem) ->
    select(ReturnField, Where, Mem, undefined).
-%%select(ReturnField, Mem, Default) when ->
-select(ReturnField, Where, Mem, Default) ->
-   do_select(ReturnField, Where, Mem, Default).
-
-%%select_single(ReturnField, Where, Mem) ->
-%%   select_single(ReturnField, Where, Mem, undefined).
-%%select_single(ReturnField, Where, Mem, Default) ->
-%%   case do_select(ReturnField, Where, Mem, Default) of
-%%      [Res] -> Res;
-%%      Else -> Else
-%%   end.
-
-%% @doc
-%% given a list of maps(json array), try to return all or exactly one entry with the given key-value criteria (Where)
-do_select(ReturnField, Where, Mem0, Default) when is_binary(ReturnField), is_list(Where) ->
+select(ReturnField, Where, Mem0, Default) when is_binary(ReturnField), is_list(Where) ->
    Mem = get_jsn(Mem0),
    case jsn:select({value, ReturnField, Default}, Where, Mem) of
-      [Res] -> Res;
       Res when is_list(Res) -> Res;
       _ -> Default
    end.
 
-%% based on type return a list or map structure, possibly from a json string (cached)
+%% based on type, return a list or map structure, possibly from a json string (cached)
 -spec get_jsn(binary()|list()|map()) -> list()|map().
 get_jsn(Mem) when is_binary(Mem) ->
    H = erlang:phash2(Mem),

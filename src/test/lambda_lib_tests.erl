@@ -31,12 +31,12 @@ json_list_data() ->
 mem_select_jarray_1_test() ->
   TheList = json_list_data(),
   Expected = <<"le232343242342343">>,
-  ?assertEqual(Expected, faxe_lambda_lib:select(<<"stream">>, [{<<"dataformat">>, <<"0001.1130">>}], TheList)).
+  ?assertEqual(Expected, faxe_lambda_lib:select_first(<<"stream">>, [{<<"dataformat">>, <<"0001.1130">>}], TheList)).
 
 mem_select_jarray_2_test() ->
   TheList = json_list_data(),
   Expected = <<"0001.1110">>,
-  ?assertEqual(Expected, faxe_lambda_lib:select(<<"dataformat">>, [{<<"key">>, <<"cond_vac">>}], TheList)).
+  ?assertEqual(Expected, faxe_lambda_lib:select_first(<<"dataformat">>, [{<<"key">>, <<"cond_vac">>}], TheList)).
 
 mem_select_jarray_notfound_test() ->
   TheList = json_list_data(),
@@ -47,19 +47,19 @@ mem_select_jarray_notfound_test() ->
 mem_select_jarray_all_test() ->
   TheList = json_list_data(),
   Expected = [<<"cond_vac">>,<<"cond_scale">>,<<"cond_robot">>],
-  Res = faxe_lambda_lib:select_all(<<"key">>, TheList),
+  Res = faxe_lambda_lib:select(<<"key">>, TheList),
   ?assertEqual(Expected, Res).
 
 mem_select_jarray_all_where_test() ->
   TheList = json_list_data(),
   Expected = <<"cond_vac">>,
-  Res = faxe_lambda_lib:select(<<"key">>, [{<<"dataformat">>, <<"0001.1110">>}], TheList),
+  Res = faxe_lambda_lib:select_first(<<"key">>, [{<<"dataformat">>, <<"0001.1110">>}], TheList),
   ?assertEqual(Expected, Res).
 
 mem_select_key_undefined_test() ->
   TheList = json_list_data(),
   Expected = undefined,
-  Res = faxe_lambda_lib:select(<<"notkey">>, [{<<"dataformat">>, <<"0001.1110">>}], TheList),
+  Res = faxe_lambda_lib:select_first(<<"notkey">>, [{<<"dataformat">>, <<"0001.1110">>}], TheList),
   ?assertEqual(Expected, Res).
 
 -endif.
