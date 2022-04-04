@@ -383,7 +383,7 @@ select(ReturnField, Where, Mem, Default) ->
 
 %% @doc
 %% given a list of maps(json array), try to return all or exactly one entry with the given key-value criteria (Where)
-do_select(ReturnField, [{_K, _V}|_]=Where, Mem0, Default) ->
+do_select(ReturnField, Where, Mem0, Default) when is_binary(ReturnField), is_list(Where) ->
    Mem = get_jsn(Mem0),
    case jsn:select({value, ReturnField, Default}, Where, Mem) of
       [Res] -> Res;
