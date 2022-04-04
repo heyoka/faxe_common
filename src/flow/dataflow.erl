@@ -209,6 +209,7 @@ val(Val, {_, binary}) when is_binary(Val) -> Val;
 val(Val, {_, string}) when is_binary(Val) -> Val;
 val(Val, {_, string_template}) when is_binary(Val) -> Val;
 val(Val, {_, list}) when is_list(Val) -> Val;
+val(Val, {_, tuple}) when is_tuple(Val) -> Val;
 val(Val, {_, atom}) when is_atom(Val) -> Val;
 val(Val, {_, lambda}) when is_function(Val) -> Val;
 val(Val, {O, boolean}) -> val(Val, {O, bool});
@@ -231,6 +232,8 @@ val(Val, {N, lambda_list}) when is_list(Val) ->
    list_val(Val, fun(E) -> is_function(E) end, lambdas, N);
 val(Val, {N, duration_list}) when is_list(Val) ->
    list_val(Val, fun(E) -> is_duration(E) end, durations, N);
+val(Val, {N, tuple_list}) when is_list(Val) ->
+   list_val(Val, fun(E) -> is_tuple(E) end, tuples, N);
 
 val(Val, {_, any}) -> Val;
 val(V, {OptName, Type}) -> option_error(<<"bad parameter type">>, V, Type, OptName).
