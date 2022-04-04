@@ -335,7 +335,7 @@ not_member(Ele, Coll) -> not member(Ele, Coll).
 map_get(Key, Map) when is_map(Map)  ->
    maps:get(Key, Map, undefined);
 map_get(Key, JBin) when is_binary(JBin) ->
-   maps:get(Key, get_mem(JBin), undefined).
+   maps:get(Key, get_jsn(JBin), undefined).
 
 -spec size(map()|list()) -> integer().
 size(Map) when is_map(Map) ->
@@ -365,34 +365,31 @@ list_to_string(List) when is_list(List) ->
 %%% json arrays
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+select(ReturnField, Where, Mem) ->
+   select(ReturnField, Where, Mem, undefined).
+select(ReturnField, Where, Mem, Default) ->
+   do_select(ReturnField, Where, Mem, Default).
+
+select_single(ReturnField, Where, Mem) ->
+   select_single(ReturnField, Where, Mem, undefined).
+select_single(ReturnField, Where, Mem, Default) ->
+   case do_select(ReturnField, Where, Mem, Default) of
+      [Res] -> Res;
+      Else -> Else
+   end.
+
 %% @doc
 %% given a list of maps(json array), try to return all or exactly one entry with the given key-value criteria (Where)
-select(ReturnField, [{_K, _V}|_]=Where, Mem0) ->
-   Mem = get_mem(Mem0),
-   case jsn:select({value, ReturnField}, Where, Mem) of
-      [Res] -> Res;
+do_select(ReturnField, [{_K, _V}|_]=Where, Mem0, Default) ->
+   Mem = get_jsn(Mem0),
+   case jsn:select({value, ReturnField, Default}, Where, Mem) of
       Res when is_list(Res) -> Res;
-      _ -> undefined
+      _ -> Default
    end.
 
-
-%% @doc
-%% given a list of maps, return all entries found at path 'Field'
-select_all(Field, Mem0) ->
-   Mem = get_mem(Mem0),
-   case jsn:select({value, Field}, Mem) of
-      Res when is_list(Res) -> Res;
-      _ -> undefined
-   end.
-
-
--spec get_mem(binary()|list()|map()) -> list()|map().
-get_mem(Mem) ->
-   {T, Res} = timer:tc(fun do_get_mem/1, [Mem]),
-   lager:warning("took ~p to proc",[T]),
-   Res.
-
-do_get_mem(Mem) when is_binary(Mem) ->
+%% based on type return a list or map structure, possibly from a json string (cached)
+-spec get_jsn(binary()|list()|map()) -> list()|map().
+get_jsn(Mem) when is_binary(Mem) ->
    H = erlang:phash2(Mem),
    case catch lookup_json(H) of
       V when is_list(V) orelse is_map(V) ->
@@ -402,7 +399,7 @@ do_get_mem(Mem) when is_binary(Mem) ->
          catch ets:insert(decoded_json, {H, Decoded}),
          Decoded
    end;
-do_get_mem(Mem) when is_list(Mem) orelse is_map(Mem) ->
+get_jsn(Mem) when is_list(Mem) orelse is_map(Mem) ->
    Mem.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -415,11 +412,14 @@ lookup_json(Hash) ->
       Other -> Other
    end.
 
+%% get a value from a mem (ets) node
 ls_mem_list(Key) ->
    mem_lookup(Key).
 ls_mem_set(Key) ->
    mem_lookup(Key).
 ls_mem(Key) ->
+   mem_lookup(Key).
+mem(Key) ->
    mem_lookup(Key).
 mem_lookup(Key) ->
    case graph_node_registry:get_graph_table() of
@@ -434,5 +434,3 @@ mem_lookup(Key) ->
    end.
 
 
-mem(Key) ->
-   ls_mem(Key).
