@@ -365,24 +365,28 @@ list_to_string(List) when is_list(List) ->
 %%% json arrays
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+select(ReturnField, Mem) ->
+   select(ReturnField, [], Mem).
 select(ReturnField, Where, Mem) ->
    select(ReturnField, Where, Mem, undefined).
+%%select(ReturnField, Mem, Default) when ->
 select(ReturnField, Where, Mem, Default) ->
    do_select(ReturnField, Where, Mem, Default).
 
-select_single(ReturnField, Where, Mem) ->
-   select_single(ReturnField, Where, Mem, undefined).
-select_single(ReturnField, Where, Mem, Default) ->
-   case do_select(ReturnField, Where, Mem, Default) of
-      [Res] -> Res;
-      Else -> Else
-   end.
+%%select_single(ReturnField, Where, Mem) ->
+%%   select_single(ReturnField, Where, Mem, undefined).
+%%select_single(ReturnField, Where, Mem, Default) ->
+%%   case do_select(ReturnField, Where, Mem, Default) of
+%%      [Res] -> Res;
+%%      Else -> Else
+%%   end.
 
 %% @doc
 %% given a list of maps(json array), try to return all or exactly one entry with the given key-value criteria (Where)
 do_select(ReturnField, [{_K, _V}|_]=Where, Mem0, Default) ->
    Mem = get_jsn(Mem0),
    case jsn:select({value, ReturnField, Default}, Where, Mem) of
+      [Res] -> Res;
       Res when is_list(Res) -> Res;
       _ -> Default
    end.
