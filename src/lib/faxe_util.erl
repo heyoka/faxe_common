@@ -22,7 +22,7 @@
    ip_to_bin/1, device_name/0, proplists_merge/2,
    levenshtein/2, build_topic/2, build_topic/1,
    to_bin/1, flip_map/1,
-   get_erlang_version/0, get_device_name/0, bytes/1, to_num/1]).
+   get_erlang_version/0, get_device_name/0, bytes/1, to_num/1, save_binary_to_atom/1]).
 
 -define(HTTP_PROTOCOL, <<"http://">>).
 
@@ -214,6 +214,12 @@ string_to_number(L) when is_binary(L) ->
             true -> Int;
             false -> false
          end
+   end.
+
+save_binary_to_atom(Bin) when is_binary(Bin) ->
+   case catch binary_to_existing_atom(Bin) of
+      A when is_atom(A) -> A;
+      _ -> throw("Cannot convert '" ++ binary_to_list(Bin) ++ "' to an atom!")
    end.
 
 %% Levenshtein code by Adam Lindberg, Fredrik Svensson via
