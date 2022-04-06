@@ -22,7 +22,7 @@
    ip_to_bin/1, device_name/0, proplists_merge/2,
    levenshtein/2, build_topic/2, build_topic/1,
    to_bin/1, flip_map/1,
-   get_erlang_version/0, get_device_name/0, bytes/1, to_num/1, save_binary_to_atom/1]).
+   get_erlang_version/0, get_device_name/0, bytes/1, to_num/1, save_binary_to_atom/1, to_rkey/1]).
 
 -define(HTTP_PROTOCOL, <<"http://">>).
 
@@ -222,6 +222,16 @@ save_binary_to_atom(Bin) when is_binary(Bin) ->
       _ -> throw("Cannot convert '" ++ binary_to_list(Bin) ++ "' to an atom!")
    end.
 
+-spec to_rkey(binary()|list()) -> binary()|list().
+to_rkey(Bin) when is_binary(Bin) ->
+   binary:replace(
+      binary:replace(
+         Bin, <<"+">>, <<"*">>, [global]),
+            <<"/">>,<<".">>,[global]
+   );
+to_rkey(List) when is_list(List) ->
+   [to_rkey(E) || E <- List].
+
 %% Levenshtein code by Adam Lindberg, Fredrik Svensson via
 %% http://www.trapexit.org/String_similar_to_(Levenshtein)
 %%
@@ -351,6 +361,31 @@ map_flip_test() ->
 
 map_flip_empty_test() ->
    ?assertEqual(#{}, faxe_util:flip_map(#{})).
+
+to_rkey_1_test() ->
+   Topic = <<"root/some/topic/here/#">>,
+   Expected = <<"root.some.topic.here.#">>,
+   ?assertEqual(Expected, to_rkey(Topic)).
+
+to_rkey_2_test() ->
+   Topic = <<"root/some/topic.dot/here/#">>,
+   Expected = <<"root.some.topic.dot.here.#">>,
+   ?assertEqual(Expected, to_rkey(Topic)).
+
+to_rkey_3_test() ->
+   Topic = <<"root/some/+/here/#">>,
+   Expected = <<"root.some.*.here.#">>,
+   ?assertEqual(Expected, to_rkey(Topic)).
+
+to_rkey_4_test() ->
+   Topic = <<"root/some/$__whatever/here-it-is/#">>,
+   Expected = <<"root.some.$__whatever.here-it-is.#">>,
+   ?assertEqual(Expected, to_rkey(Topic)).
+
+to_rkey_list_test() ->
+   Topics = [<<"root/some/ttopic/here/v2">>, <<"root/some/+/here/+/v1/#">>, <<"root/some/+/here/#">>],
+   Expected = [<<"root.some.ttopic.here.v2">>, <<"root.some.*.here.*.v1.#">>, <<"root.some.*.here.#">>],
+   ?assertEqual(Expected, to_rkey(Topics)).
 
 -endif.
 
