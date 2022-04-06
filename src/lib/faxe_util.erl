@@ -230,7 +230,9 @@ to_rkey(Bin) when is_binary(Bin) ->
             <<"/">>,<<".">>,[global]
    );
 to_rkey(List) when is_list(List) ->
-   [to_rkey(E) || E <- List].
+   [to_rkey(E) || E <- List];
+to_rkey(Other) ->
+   Other.
 
 %% Levenshtein code by Adam Lindberg, Fredrik Svensson via
 %% http://www.trapexit.org/String_similar_to_(Levenshtein)
@@ -380,6 +382,11 @@ to_rkey_3_test() ->
 to_rkey_4_test() ->
    Topic = <<"root/some/$__whatever/here-it-is/#">>,
    Expected = <<"root.some.$__whatever.here-it-is.#">>,
+   ?assertEqual(Expected, to_rkey(Topic)).
+
+to_rkey_undefined_test() ->
+   Topic = undefined,
+   Expected = undefined,
    ?assertEqual(Expected, to_rkey(Topic)).
 
 to_rkey_list_test() ->
