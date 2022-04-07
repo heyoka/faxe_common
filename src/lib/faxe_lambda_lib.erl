@@ -356,7 +356,7 @@ select(ReturnField, Where, Mem0, Default) when is_binary(ReturnField), is_list(W
    Mem = get_jsn(Mem0),
    case jsn:select({value, ReturnField, Default}, Where, Mem) of
       Res when is_list(Res) -> Res;
-      _ -> Default
+      undefined -> erlang:error("faxe_lambda_lib select", [ReturnField, Where, Mem])
    end.
 
 %% based on type, return a list or map structure, possibly from a json string (cached)
@@ -404,5 +404,16 @@ mem_lookup(Key) ->
          end,
       Res
    end.
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%% side load
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%sideload_dh(<<"topics">>, SiteId) ->
+%%   sideload_dh(<<"topics">>, SiteId, undefined).
+%%sideload_dh(<<"topics">>, SiteId, DeviceId) ->
+%%   sideload_dh(<<"topics">>, SiteId, DeviceId, undefined).
+%%sideload_dh(<<"topics">>, SiteId, DeviceId, DataFormat) ->
+%%   do_me_the_graphql_query().
 
 
