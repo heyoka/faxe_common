@@ -341,6 +341,7 @@ select_first(ReturnField, Where, Mem) ->
    select_first(ReturnField, Where, Mem, undefined).
 select_first(ReturnField, Where, Mem, Default) ->
    case select(ReturnField, Where, Mem, Default) of
+      [undefined|_] -> erlang:error("faxe_lambda_lib:select_first returned undefined", [ReturnField, Where, Mem]);
       [Res|_] -> Res;
       Else -> Else
    end.
