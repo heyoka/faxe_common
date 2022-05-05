@@ -307,10 +307,15 @@ year(Ts) ->
 %%% random generators
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%% @doc generate a random integer between 1 and N
+%% @doc generate a random integer uniformly distributed between 1 and N
 -spec random(non_neg_integer()) -> non_neg_integer().
 random(N) when is_integer(N), N > 0 ->
    rand:uniform(N).
+
+%% @doc generate a random integer uniformly distributed between N and M
+-spec random(non_neg_integer(), non_neg_integer()) -> non_neg_integer().
+random(N, M) when is_integer(N), is_integer(M), M > 0 ->
+   N + random(M-N).
 
 %% @doc generate a random float between 0.0 and 1.0, that gets multiplied by N
 -spec random_real(non_neg_integer()) -> float().
@@ -319,6 +324,11 @@ random_real(N) ->
 
 random_float(N) ->
    random_real(N).
+
+%% @doc generate a standard normal deviate float (that is, the mean is 0 and the standard deviation is 1)
+-spec random_normal() -> float().
+random_normal() ->
+   rand:normal().
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% list/map functions
