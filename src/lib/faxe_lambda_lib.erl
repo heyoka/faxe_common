@@ -313,8 +313,8 @@ random(N) when is_integer(N), N > 0 ->
    rand:uniform(N).
 
 %% @doc generate a random integer uniformly distributed between N and M
--spec random(non_neg_integer(), non_neg_integer()) -> non_neg_integer().
-random(N, M) when is_integer(N), is_integer(M), M > 0 ->
+-spec random(pos_integer(), pos_integer()) -> pos_integer().
+random(N, M) when is_integer(N), is_integer(M), N > 0, M > N ->
    N + random(M-N).
 
 %% @doc generate a random float between 0.0 and 1.0, that gets multiplied by N
@@ -329,6 +329,20 @@ random_float(N) ->
 -spec random_normal() -> float().
 random_normal() ->
    rand:normal().
+
+%% @doc
+%% Returns a random binary of size Length consisting of latins [a-zA-Z] and digits [0-9].
+%% @end
+-spec random_latin_string(pos_integer()) -> binary().
+random_latin_string(Length) when is_integer(Length), Length > 0 ->
+   faxe_util:random_latin_binary(Length).
+
+%% @doc
+%% Returns a random binary of size random(Min, Max) consisting of latins [a-zA-Z] and digits [0-9].
+%% @end
+-spec random_latin_string(pos_integer(), pos_integer()) -> binary().
+random_latin_string(Min, Max) when is_integer(Min), is_integer(Max), Min > 0, Max > Min ->
+   faxe_util:random_latin_binary(random(Min, Max)).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% list/map functions

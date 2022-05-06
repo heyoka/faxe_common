@@ -22,7 +22,7 @@
    ip_to_bin/1, device_name/0, proplists_merge/2,
    levenshtein/2, build_topic/2, build_topic/1,
    to_bin/1, flip_map/1,
-   get_erlang_version/0, get_device_name/0, bytes/1, to_num/1, save_binary_to_atom/1, to_rkey/1]).
+   get_erlang_version/0, get_device_name/0, bytes/1, to_num/1, save_binary_to_atom/1, to_rkey/1, random_latin_binary/2, random_latin_binary/1]).
 
 -define(HTTP_PROTOCOL, <<"http://">>).
 
@@ -264,6 +264,45 @@ levenshtein_distlist([], _, _, NewDistList, _) ->
 % Calculates the difference between two characters or other values
 dif(C, C) -> 0;
 dif(_, _) -> 1.
+
+
+%% @doc
+%% Returns a random binary of size Length consisting of latins [a-zA-Z] and digits [0-9].
+%% @end
+-spec random_latin_binary(pos_integer()) -> binary().
+random_latin_binary(Length) ->
+   random_latin_binary(Length, any).
+
+%% random_latin_binary/2
+-spec random_latin_binary(Length :: pos_integer(), CaseFlag :: lower | upper | any) -> binary().
+%% @doc
+%% Returns a random binary of size Length consisting of latins [a-zA-Z] and digits [0-9].
+%% The second argument CaseFlag corresponds to a letter case, an atom 'lower', 'upper' or 'any'.
+%% @end
+random_latin_binary(Length, CaseFlag) ->
+   Chars = case CaseFlag of
+              lower -> <<"abcdefghijklmnopqrstuvwxyz0123456789">>;
+              upper -> <<"ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789">>;
+              any -> <<"abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789">>
+           end,
+   random_binary_from_chars(Length, Chars).
+
+
+%% random_binary_from_chars/2
+-spec random_binary_from_chars(Length :: pos_integer(), Chars :: binary()) -> binary().
+%% @doc
+%% Generates and returns a binary of size Length which consists of the given characters Chars.
+%% @end
+random_binary_from_chars(Length, Chars) ->
+   Bsize = erlang:byte_size(Chars),
+   lists:foldl(
+      fun(_, Acc) ->
+         RndChar = binary:at(Chars, rand:uniform(Bsize)-1),
+         << Acc/binary, RndChar >>
+      end,
+      <<>>,
+      lists:seq(1, Length)
+   ).
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% TESTS %%%%%%%%%
