@@ -23,7 +23,6 @@
 -spec execute(#data_point{}, fun()) -> any().
 execute(#data_point{} = Point, LambdaFun) when is_function(LambdaFun) ->
    PreparedFun = LambdaFun(Point),
-   lager:info("preparedFun for point: ~p :: ~p",[Point, LambdaFun]),
    PreparedFun().
 
 %% @doc

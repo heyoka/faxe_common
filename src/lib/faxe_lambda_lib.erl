@@ -378,10 +378,28 @@ select(ReturnField, Mem) ->
 select(ReturnField, Where, Mem) ->
    select(ReturnField, Where, Mem, undefined).
 select(ReturnField, Where, Mem0, Default) when is_binary(ReturnField), is_list(Where) ->
+   H = erlang:phash2({ReturnField, Where, Mem0, Default}),
+   case select_cache(H) of
+      false ->
+         Res = do_select(ReturnField, Where, Mem0, Default),
+         catch ets:insert(select_cache, {H, Res}),
+         Res;
+      CachedRes -> CachedRes
+   end.
+
+do_select(ReturnField, Where, Mem0, Default) when is_binary(ReturnField), is_list(Where) ->
    Mem = get_jsn(Mem0),
    case jsn:select({value, ReturnField, Default}, Where, Mem) of
       Res when is_list(Res) -> Res;
       undefined -> erlang:error("faxe_lambda_lib select returned undefined", [ReturnField, Where, Mem])
+   end.
+
+
+select_cache(H) ->
+   case catch lookup_select(H) of
+      V when is_list(V) -> V;
+      _ ->
+         false
    end.
 
 %% based on type, return a list or map structure, possibly from a json string (cached)
@@ -402,6 +420,13 @@ get_jsn(Mem) when is_list(Mem) orelse is_map(Mem) ->
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% lambda state functions
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+lookup_select(Hash) ->
+   case ets:lookup(select_cache, Hash) of
+      [{Hash, Val}] -> Val;
+      [] -> undefined;
+      Other -> Other
+   end.
+
 lookup_json(Hash) ->
    case ets:lookup(decoded_json, Hash) of
       [{Hash, Val}] -> Val;

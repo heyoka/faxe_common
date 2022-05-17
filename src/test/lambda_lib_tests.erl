@@ -58,8 +58,7 @@ mem_select_jarray_all_where_test() ->
 
 mem_select_key_undefined_test() ->
   TheList = json_list_data(),
-  Expected = undefined,
-  Res = faxe_lambda_lib:select_first(<<"notkey">>, [{<<"dataformat">>, <<"0001.1110">>}], TheList),
-  ?assertEqual(Expected, Res).
+  ?assertError("faxe_lambda_lib:select_first returned undefined",
+    faxe_lambda_lib:select_first(<<"notkey">>, [{<<"dataformat">>, <<"0001.1110">>}], TheList)).
 
 -endif.
