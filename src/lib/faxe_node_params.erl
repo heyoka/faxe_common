@@ -38,7 +38,7 @@ options(<<"case">>) -> [{all, <<"lambdas">>, lambda_list}];
 options(<<"change_detect">>) -> [{all, <<"fields">>, string_list}];
 options(<<"collect_unique">>) -> [{1, <<"field">>, string}];
 options(<<"group_by">>) -> [{all, <<"fields">>, string_list}];
-options(<<"jsn_select">>) -> [{all, <<"fields">>, string_list}];
+options(<<"json_emitter">>) -> [{all, <<"json">>, string_list}];
 options(<<"amqp_consume">>) -> [{1, <<"qx_name">>, string}];
 options(_) -> undefined.
 
