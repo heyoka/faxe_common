@@ -74,7 +74,7 @@ new_graph() ->
 add_node({NodeName, Component}, Defs) when is_atom(Component), is_map(Defs) ->
    add_node({NodeName, Component, []}, Defs);
 add_node({NodeName, Component, Params}, Defs=#{nodes := Nodes})
-      when is_atom(Component), is_map(Defs), is_map(Params) ->
+   when is_atom(Component), is_map(Defs), is_map(Params) ->
    Defs#{nodes := [{NodeName, Component, Params} | Nodes]}.
 
 %% @doc add a new edge to #{nodes := Nodes, edges := Edges}
@@ -147,7 +147,7 @@ retrieve_dtag(#data_batch{points = Points}) ->
 
 -spec build_options(atom(), list( {atom(), option_value()} ), map()) -> map().
 build_options(Component, L, Opts) ->
-%%   lager:notice("build options for: ~p :: ~p -------------- ~p", [Component, L, Opts]),
+   lager:notice("build options for: ~p :: ~p -------------- ~p", [Component, L, Opts]),
 %%   case do_build_options(Opts, L) of
    case catch(do_build_options(Opts, L)) of
       Opts0 when is_map(Opts0) -> maybe_check_opts(Opts0, Component);
@@ -158,40 +158,57 @@ build_options(Component, L, Opts) ->
 do_build_options([], _) -> #{};
 do_build_options(Opts, L) when is_list(L), is_list(Opts) ->
    %% precheck if all the given params make sense (exits for this node)
+   build_eval(Opts, L, #{}).
 
-   lists:foldl(
-      fun
-         ({OptName, is_set}, Acc) ->
-            case proplists:get_value(OptName, L) of
-               undefined -> Acc#{OptName => false};
-               true      -> Acc#{OptName => true}
-            end;
-         ({OptName, is_set, Default}, Acc) ->
-            case proplists:get_value(OptName, L) of
-               undefined -> Acc#{OptName => Default};
-               true      -> Acc#{OptName => true}
-            end;
-         ({OptName, OptType, Default}, Acc) ->
-            case proplists:get_value(OptName, L) of
-               undefined -> Acc#{OptName => Default};
-               V        -> Acc#{OptName => val(V, {OptName, OptType})}
-            end;
-         ({OptName, OptType}, Acc) ->
-            case proplists:get_value(OptName, L) of
-               undefined ->
-                  throw([<<"option_missing: '">>,
-                     atom_to_binary(OptName,utf8), <<"', required type: ">>, atom_to_binary(OptType,utf8)]);
-               V        -> Acc#{OptName => val(V, {OptName, OptType})}
-            end
-      end,
-      #{},
-      Opts).
+build_eval([], _Given, Acc) ->
+   Acc;
+build_eval([{OptName, is_set}|Opts], Given, Acc) ->
+   build_eval(Opts, Given, eval_is_set(OptName, Given, Acc));
+build_eval([{OptName, is_set, Default}|Opts], Given, Acc) ->
+   build_eval(Opts, Given, eval_is_set(OptName, Given, Default, Acc));
+build_eval([{OptName, OptType, Default}|Opts], Given, Acc) ->
+   build_eval(Opts, Given, eval_opt(OptName, OptType, Default, Given, Acc));
+build_eval([{OptName, OptType}|Opts], Given, Acc) ->
+   build_eval(Opts, Given, eval_opt(OptName, OptType, Given, Acc));
+build_eval([#{name := OptName, type := is_set, default := Default}|Opts], Given, Acc) ->
+   build_eval(Opts, Given, eval_is_set(OptName, Given, Default, Acc));
+build_eval([#{name := OptName, type := is_set}|Opts], Given, Acc) ->
+   build_eval(Opts, Given, eval_is_set(OptName, Given, Acc));
+build_eval([#{name := OptName, type := Type, default := Default}|Opts], Given, Acc) ->
+   build_eval(Opts, Given, eval_opt(OptName, Type, Default, Given, Acc));
+build_eval([#{name := OptName, type := Type}|Opts], Given, Acc) ->
+   build_eval(Opts, Given, eval_opt(OptName, Type, Given, Acc));
+build_eval(What, WhatGiven, Acc) ->
+   lager:warning("unexpected clause build_eval(~p, ~p, ~p)",[What, WhatGiven, Acc]).
 
 %%====================================================================
 %% Internal functions
 %%====================================================================
+eval_is_set(OptName, Given, Acc) ->
+   case proplists:get_value(OptName, Given) of
+      undefined  -> Acc#{OptName => false};
+      true     -> Acc#{OptName => true}
+   end.
+eval_is_set(OptName, Given, Default, Acc) ->
+   case proplists:get_value(OptName, Given) of
+      undefined -> Acc#{OptName => Default};
+      true      -> Acc#{OptName => true}
+   end.
+eval_opt(OptName, OptType, Given, Acc) ->
+   case proplists:get_value(OptName, Given) of
+      undefined ->
+         throw([<<"option_missing: '">>,
+            atom_to_binary(OptName,utf8), <<"', required type: ">>, atom_to_binary(OptType,utf8)]);
+      V        -> Acc#{OptName => val(V, {OptName, OptType})}
+   end.
+eval_opt(OptName, OptType, Default, Given, Acc) ->
+   case proplists:get_value(OptName, Given) of
+      undefined -> Acc#{OptName => Default};
+      V        -> Acc#{OptName => val(V, {OptName, OptType})}
+   end.
 
-%%
+
+%%%%%%%
 -spec val(option_value(), {Name :: binary(), option_name()}) -> option_value().
 val(Val, {OptName, duration}) when is_binary(Val) ->
    case is_duration(Val) of
@@ -276,7 +293,7 @@ do_check({same_length, [Key1|Keys]=_OptionKeys}, Opts = #{}, Mod) ->
                      <<"' and '">>, atom_to_binary(KeyE, utf8), <<"'">>]))
             end
       end
-      end,
+       end,
    lists:foreach(F, Keys);
 
 do_check({not_empty, Keys}, Opts, Mod) ->
@@ -287,20 +304,20 @@ do_check({not_empty, Keys}, Opts, Mod) ->
             [<<"Option may not be empty: '">>, atom_to_binary(KeyE, utf8), <<"'">>]));
          _ -> ok
       end
-      end,
+       end,
    lists:foreach(F, Keys);
 
 do_check({max_param_count, Keys, Max}, Opts, Mod) ->
    F = fun(KeyE) ->
-         case maps:get(KeyE, Opts, undefined) of
-            undefined -> ok; %% should not happen
-            Params -> case erlang:length(Params) > Max of
-                         true -> erlang:error(format_error(too_many_items, Mod,
-                            [<<"Max param count: '">>, Max, <<" for ">>,
-                               atom_to_binary(KeyE, utf8), <<"'">>]));
-                         false -> ok
-                      end
-         end
+      case maps:get(KeyE, Opts, undefined) of
+         undefined -> ok; %% should not happen
+         Params -> case erlang:length(Params) > Max of
+                      true -> erlang:error(format_error(too_many_items, Mod,
+                         [<<"Max param count: '">>, Max, <<" for ">>,
+                            atom_to_binary(KeyE, utf8), <<"'">>]));
+                      false -> ok
+                   end
+      end
        end,
    lists:foreach(F, Keys);
 
@@ -314,16 +331,16 @@ do_check({one_of_params, Keys}, Opts, Mod) ->
 do_check({check_one_params, Keys, AllowNone}, Opts, Mod) ->
    OptsKeys = maps:keys(Opts),
    Has =
-   lists:filter(fun(E) ->
-      lists:member(E, OptsKeys) andalso maps:get(E, Opts) /= undefined
-                end, Keys),
+      lists:filter(fun(E) ->
+         lists:member(E, OptsKeys) andalso maps:get(E, Opts) /= undefined
+                   end, Keys),
    case length(Has) of
       0 when AllowNone == true -> ok;
       1 -> ok;
       _ ->
          KeysBinList = ["'" ++ atom_to_list(K) ++ "'" || K <- Keys],
          erlang:error(format_error(invalid_opt, Mod,
-         [<<"Must provide one of params: ">>, lists:join(<<", " >>, KeysBinList)]))
+            [<<"Must provide one of params: ">>, lists:join(<<", " >>, KeysBinList)]))
    end;
 
 %% check if at least one of the required parameters is given
@@ -351,12 +368,12 @@ do_check({one_of, Key, ValidOpts}, Opts, Mod) ->
       Params when is_list(Params) ->
 %%         lager:warning("params: ~p", [Params]),
          lists:foreach(fun(E) ->
-                        case lists:member(E, ValidOpts) of
-                           true -> ok;
-                           false -> erlang:error(format_error(invalid_opt, Mod,
-                              [<<"Cannot use '">>, E, <<"' for param '">>, atom_to_binary(Key, latin1),
-                                 <<"'">>, <<" must be one of: ">>, lists:join(<<", " >>, ValidOpts)]))
-                        end
+            case lists:member(E, ValidOpts) of
+               true -> ok;
+               false -> erlang:error(format_error(invalid_opt, Mod,
+                  [<<"Cannot use '">>, E, <<"' for param '">>, atom_to_binary(Key, latin1),
+                     <<"'">>, <<" must be one of: ">>, lists:join(<<", " >>, ValidOpts)]))
+            end
                        end, Params);
       Param -> case lists:member(Param, ValidOpts) of
                   true -> ok;
@@ -370,10 +387,10 @@ do_check({func, Key, Fun, Message}, Opts, Mod) when is_function(Fun), is_binary(
    Val = maps:get(Key, Opts, undefined),
 %%   lager:notice("check func for :~p",[{Key, Val}]),
    Res =
-   case erlang:fun_info(Fun, arity) of
-      {arity, 1} -> Fun(Val);
-      {arity, 2} -> Fun(Val, Opts)
-   end,
+      case erlang:fun_info(Fun, arity) of
+         {arity, 1} -> Fun(Val);
+         {arity, 2} -> Fun(Val, Opts)
+      end,
    case Res of
       true -> ok;
       false -> erlang:error(format_error(invalid_opt, Mod,
@@ -394,5 +411,5 @@ format_error(Type, Component, Error) ->
    NodeName0 = atom_to_binary(Component, utf8),
    NodeName = binary:replace(NodeName0, <<"esp_">>, <<>>),
    iolist_to_binary(
-   [atom_to_binary(Type, utf8), <<" for node ">>, NodeName, <<": ">>] ++ Error
+      [atom_to_binary(Type, utf8), <<" for node ">>, NodeName, <<": ">>] ++ Error
    ).
