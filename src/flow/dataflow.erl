@@ -147,8 +147,6 @@ retrieve_dtag(#data_batch{points = Points}) ->
 
 -spec build_options(atom(), list( {atom(), option_value()} ), map()) -> map().
 build_options(Component, L, Opts) ->
-   lager:notice("build options for: ~p :: ~p -------------- ~p", [Component, L, Opts]),
-%%   case do_build_options(Opts, L) of
    case catch(do_build_options(Opts, L)) of
       Opts0 when is_map(Opts0) -> maybe_check_opts(Opts0, Component);
       {error, What} -> erlang:error({bad_option, {Component, What}});
