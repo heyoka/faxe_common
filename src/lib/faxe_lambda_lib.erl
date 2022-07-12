@@ -179,6 +179,13 @@ defined(Val) ->
 undefined(Val) ->
    Val == undefined.
 
+empty(undefined) -> true;
+empty([]) -> true;
+empty(<<>>) -> true;
+empty(Val) when is_binary(Val) -> estr:str_strip(Val) == <<>>;
+empty(_) -> false.
+
+
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% additional string functions
