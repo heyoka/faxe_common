@@ -428,6 +428,10 @@ handle_info(Req, State = #c_state{component = Module, cb_state = CB, cb_handle_i
          handle_info({emit, Data}, State#c_state{cb_state = CB1});
       {emit, Data, CB1} ->
          handle_info({emit, {1, Data}}, State#c_state{cb_state = CB1});
+      {stop, Reason, CB3} ->
+         lager:notice("stop message from ~p node with reason ~p",[Module, Reason]),
+         faxe:stop_task(State#c_state.graph_id),
+         {noreply, State#c_state{cb_state = CB3}};
       {error, _Reason} ->
          {noreply, State#c_state{cb_state = CB}}
    end
