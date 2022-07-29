@@ -268,6 +268,9 @@ time_align(Ts, DurationUnit) when is_integer(Ts), is_binary(DurationUnit) ->
    Unit = faxe_time:binary_to_duration(DurationUnit),
    faxe_time:align(Ts, Unit).
 
+from_duration(Dur) ->
+   faxe_time:duration_to_ms(Dur).
+
 -spec millisecond(non_neg_integer()) -> non_neg_integer().
 millisecond(Ts) ->
    faxe_time:get(millisecond, Ts).
