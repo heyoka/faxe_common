@@ -61,7 +61,7 @@
    timer_start/2,
    timer_next/1,
    timer_cancel/1
-   , timer_now/1, init_timer/3]).
+   , timer_now/1, init_timer/3, timer_new/3]).
 
 %%% @doc
 %%% get "now" in milliseconds,
@@ -403,6 +403,21 @@ timer_new(Interval, Message) ->
       interval = Interval,
       message = Message
    }.
+
+%% create a timer instance without starting it
+%% use timer:now/1 or timer:next/1 to trigger a send operation
+timer_new(Interval, Align, Message) when is_atom(Align), is_binary(Interval) ->
+   Now = faxe_time:now(),
+   NewTs =
+      case Align of
+         true -> faxe_time:align(Now, faxe_time:binary_to_duration(Interval));
+         false -> Now
+      end,
+   Timer = #faxe_timer{
+      interval = faxe_time:duration_to_ms(Interval),
+      message = Message, last_time = NewTs
+   },
+   Timer.
 
 %% @doc create a timer and immediately send the timeout message without waiting for the first interval to elapse
 -spec timer_start(non_neg_integer(), term()) -> #faxe_timer{}.
