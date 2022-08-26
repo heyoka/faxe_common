@@ -381,16 +381,16 @@ select_first(ReturnField, Where, Mem, Default) ->
    end.
 
 
-select_first_any(ReturnField, Where, Mem) ->
-   select_first_any(ReturnField, Where, Mem, undefined).
-select_first_any(_ReturnField, [], _Mem, Default) ->
+select_any_first(ReturnField, Where, Mem) ->
+   select_any_first(ReturnField, Where, Mem, undefined).
+select_any_first(_ReturnField, [], _Mem, Default) ->
    Default;
-select_first_any(ReturnField, [Where|Conds], Mem, Default) ->
+select_any_first(ReturnField, [Where|Conds], Mem, Default) ->
    case select(ReturnField, [Where], Mem, Default) of
-      Default -> select_first_any(ReturnField, Conds, Mem, Default);
-      [undefined|_] -> select_first_any(ReturnField, Conds, Mem, Default);
-      undefined -> select_first_any(ReturnField, Conds, Mem, Default);
-      [] -> select_first_any(ReturnField, Conds, Mem, Default);
+      Default -> select_any_first(ReturnField, Conds, Mem, Default);
+      [undefined|_] -> select_any_first(ReturnField, Conds, Mem, Default);
+      undefined -> select_any_first(ReturnField, Conds, Mem, Default);
+      [] -> select_any_first(ReturnField, Conds, Mem, Default);
       [Res|_] -> Res;
       Else -> Else
    end.

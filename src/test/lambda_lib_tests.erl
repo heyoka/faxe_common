@@ -64,7 +64,7 @@ mem_select_key_undefined_test() ->
 mem_select_first_any_jarray_all_where_test() ->
   TheList = json_list_data(),
   Expected = <<"cond_vac">>,
-  Res = faxe_lambda_lib:select_first_any(<<"key">>,
+  Res = faxe_lambda_lib:select_any_first(<<"key">>,
     [{<<"strem">>, <<"le23234324234werw343">>}, {<<"dataformat">>, <<"0001.1110">>}],
     TheList),
   ?assertEqual(Expected, Res).
@@ -72,7 +72,7 @@ mem_select_first_any_jarray_all_where_test() ->
 mem_select_first_any_jarray_undefined_test() ->
   TheList = json_list_data(),
   Expected = undefined,
-  Res = faxe_lambda_lib:select_first_any(<<"key">>,
+  Res = faxe_lambda_lib:select_any_first(<<"key">>,
     [{<<"stream">>, <<"le23234324234werw343">>}, {<<"dataformat">>, <<"0001.1110-t">>}],
     TheList),
   ?assertEqual(Expected, Res).
@@ -80,7 +80,7 @@ mem_select_first_any_jarray_undefined_test() ->
 mem_select_first_any_jarray_undefined_default_test() ->
   TheList = json_list_data(),
   Expected = 133,
-  Res = faxe_lambda_lib:select_first_any(<<"key">>,
+  Res = faxe_lambda_lib:select_any_first(<<"key">>,
     [{<<"stream">>, <<"le23234324234werw343">>}, {<<"dataformat">>, <<"0001.1110-t">>}],
     TheList, 133),
   ?assertEqual(Expected, Res).
