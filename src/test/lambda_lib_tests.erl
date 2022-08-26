@@ -61,4 +61,60 @@ mem_select_key_undefined_test() ->
   ?assertError("faxe_lambda_lib:select_first returned undefined",
     faxe_lambda_lib:select_first(<<"notkey">>, [{<<"dataformat">>, <<"0001.1110">>}], TheList)).
 
+mem_select_first_any_jarray_all_where_test() ->
+  TheList = json_list_data(),
+  Expected = <<"cond_vac">>,
+  Res = faxe_lambda_lib:select_first_any(<<"key">>,
+    [{<<"strem">>, <<"le23234324234werw343">>}, {<<"dataformat">>, <<"0001.1110">>}],
+    TheList),
+  ?assertEqual(Expected, Res).
+
+mem_select_first_any_jarray_undefined_test() ->
+  TheList = json_list_data(),
+  Expected = undefined,
+  Res = faxe_lambda_lib:select_first_any(<<"key">>,
+    [{<<"stream">>, <<"le23234324234werw343">>}, {<<"dataformat">>, <<"0001.1110-t">>}],
+    TheList),
+  ?assertEqual(Expected, Res).
+
+mem_select_first_any_jarray_undefined_default_test() ->
+  TheList = json_list_data(),
+  Expected = 133,
+  Res = faxe_lambda_lib:select_first_any(<<"key">>,
+    [{<<"stream">>, <<"le23234324234werw343">>}, {<<"dataformat">>, <<"0001.1110-t">>}],
+    TheList, 133),
+  ?assertEqual(Expected, Res).
+
+mem_select_any_jarray_where_test() ->
+  TheList = json_list_data(),
+  Expected = [<<"cond_vac">>],
+  Res = faxe_lambda_lib:select_any(<<"key">>,
+    [{<<"stream">>, <<"le23234324234werw343">>}, {<<"dataformat">>, <<"0001.1110">>}],
+    TheList),
+  ?assertEqual(Expected, Res).
+
+mem_select_any_jarray_where_multiple_test() ->
+  TheList = json_list_data(),
+  Expected = [<<"cond_robot">>, <<"cond_vac">>],
+  Res = faxe_lambda_lib:select_any(<<"key">>,
+    [{<<"stream">>, <<"le232343242342343">>}, {<<"dataformat">>, <<"0001.1110">>}],
+    TheList),
+  ?assertEqual(Expected, Res).
+
+mem_select_any_jarray_undefined_test() ->
+  TheList = json_list_data(),
+  Expected = [],
+  Res = faxe_lambda_lib:select_any(<<"key">>,
+    [{<<"stream">>, <<"le23234324234werw343">>}, {<<"dataformat">>, <<"0001.1110-t">>}],
+    TheList),
+  ?assertEqual(Expected, Res).
+
+mem_select_any_jarray_undefined_default_test() ->
+  TheList = json_list_data(),
+  Expected = 266,
+  Res = faxe_lambda_lib:select_any(<<"key">>,
+    [{<<"stream">>, <<"le23234324234werw343">>}, {<<"dataformat">>, <<"0001.1110-t">>}],
+    TheList, 266),
+  ?assertEqual(Expected, Res).
+
 -endif.

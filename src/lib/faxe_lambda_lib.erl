@@ -380,6 +380,21 @@ select_first(ReturnField, Where, Mem, Default) ->
       Else -> Else
    end.
 
+
+select_first_any(ReturnField, Where, Mem) ->
+   select_first_any(ReturnField, Where, Mem, undefined).
+select_first_any(_ReturnField, [], _Mem, Default) ->
+   Default;
+select_first_any(ReturnField, [Where|Conds], Mem, Default) ->
+   case select(ReturnField, [Where], Mem, Default) of
+      Default -> select_first_any(ReturnField, Conds, Mem, Default);
+      [undefined|_] -> select_first_any(ReturnField, Conds, Mem, Default);
+      undefined -> select_first_any(ReturnField, Conds, Mem, Default);
+      [] -> select_first_any(ReturnField, Conds, Mem, Default);
+      [Res|_] -> Res;
+      Else -> Else
+   end.
+
 %% @doc
 %% given a list of maps(json array), try to return all entries with the given key-value criteria (Where)
 %% the Where param: either an empty list [], or a list of two-tuples
@@ -395,6 +410,25 @@ select(ReturnField, Where, Mem0, Default) when is_binary(ReturnField), is_list(W
          catch ets:insert(select_cache, {H, Res}),
          Res;
       CachedRes -> CachedRes
+   end.
+
+
+select_any(_ReturnField, Where, Mem) ->
+   select_any(_ReturnField, Where, Mem, []).
+
+select_any(_ReturnField, [], _Mem0, Default) ->
+   Default;
+select_any(ReturnField, Where, Mem0, Default) ->
+   select_any(ReturnField, Where, Mem0, Default, []).
+
+select_any(_ReturnField, [], _Mem0, Default, []) ->
+   Default;
+select_any(_ReturnField, [], _Mem0, _Default, Results) ->
+   Results;
+select_any(ReturnField, [Where|Conds], Mem0, Default, Results) ->
+   case select(ReturnField, [Where], Mem0, Default) of
+      [] -> select_any(ReturnField, Conds, Mem0, Default, Results);
+      Res when is_list(Res) -> select_any(ReturnField, Conds, Mem0, Default, Results++Res)
    end.
 
 do_select(ReturnField, Where, Mem0, Default) when is_binary(ReturnField), is_list(Where) ->
