@@ -30,7 +30,7 @@
    build_options/3,
    maybe_check_opts/2,
    maybe_debug/5,
-   ack/2, ack/3]).
+   ack/2, ack/3, persist/2]).
 
 %%====================================================================
 %% CALLBACK API functions
@@ -132,6 +132,12 @@ ack(_Mode, undefined, _Inputs) ->
 ack(Mode, DTag, Inputs) ->
    lists:foreach(fun({_Port, Pid}) -> Pid ! {ack, Mode, DTag} end, Inputs).
 
+persist(ComponentIdx, What) ->
+   faxe_db:persist_state(ComponentIdx, What).
+
+
+
+%% internal
 retrieve_dtag(#data_point{dtag = DTag}) ->
    {single, DTag};
 retrieve_dtag(#data_batch{points = []}) ->

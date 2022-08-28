@@ -24,12 +24,13 @@
 
 -define(MSG_Q_LENGTH_HIGH_WATERMARK, 15).
 
--type auto_request()    :: 'all' | 'emit' | 'none'.
+-type auto_request()    :: all | emit | none.
+-type auto_persist()    :: true | false.
 -type item_type()       :: nil | batch | point | both.
 
 -type df_port()         :: non_neg_integer().
 
-
+-type data_item()       :: #data_point{} | #data_batch{}.
 %%%===================================================================
 %%% CALLBACKS
 %%%===================================================================
@@ -41,6 +42,10 @@
 %%
 -callback init(NodeId :: term(), Inputs :: list(), Args :: term())
        -> {ok, auto_request(), cbstate()}.
+-callback init(NodeId :: term(), Inputs :: list(), Args :: term(), PreviousState :: term())
+       ->
+       {ok, auto_request(), cbstate()} |
+       {ok, auto_persist(), cbstate()}.
 
 
 
@@ -64,30 +69,36 @@
 %% {emit_request, OutPort :: port(), Value :: term(), ReqPort :: port(), ReqPid :: pid(), cbstate()}
 %% @end
 %%
--callback process(Inport :: non_neg_integer(), Value :: #data_point{} | #data_batch{}, State :: cbstate())
+-callback process(Inport :: non_neg_integer(), Value :: data_item(), State :: cbstate())
        ->
        {ok, cbstate()} |
 
        {emit,
-          { Port :: df_port(), Value :: term() }, cbstate()
+          { Port :: df_port(), Value :: data_item() }, cbstate()
        } |
        {emit,
-          Value :: term(), cbstate()
+          Value :: data_item(), cbstate()
        } |
        {request,
           { ReqPort :: df_port(), ReqPid :: pid() }, cbstate()
        } |
        {emit_request,
-          { OutPort :: df_port(), Value :: term() }, { ReqPort :: df_port(), ReqPid :: pid() }, cbstate()
+          { OutPort :: df_port(), Value :: data_item() }, { ReqPort :: df_port(), ReqPid :: pid() }, cbstate()
        } |
        {emit_request,
-          Value :: term(), { ReqPort :: df_port(), ReqPid :: pid() }, cbstate()
+          Value :: data_item(), { ReqPort :: df_port(), ReqPid :: pid() }, cbstate()
+       } |
+       {emit_persist,
+          { OutPort :: df_port(), Value :: data_item()}, PersistData ::term(), cbstate()
+       } |
+       {emit_persist,
+          Value :: data_item(), PersistData ::term(), cbstate()
        } |
        {emit_ack,
-          { OutPort :: df_port(), Value :: term() }, DTag :: non_neg_integer(), cbstate()
+          { OutPort :: df_port(), Value :: data_item()}, DTag :: non_neg_integer(), cbstate()
        } |
        {emit_ack,
-          Value :: term(), DTag :: non_neg_integer(), cbstate()
+          Value :: data_item(), DTag :: non_neg_integer(), cbstate()
        } |
 
        {error, Reason :: term()}.
@@ -159,7 +170,7 @@
 %% @end
 -callback handle_info(Request :: term(), State :: cbstate()) ->
    {ok, NewCallbackState :: cbstate()} |
-   {emit, {Port :: non_neg_integer(), Value :: term()}, NewCallbackState :: cbstate()} |
+   {emit, {Port :: non_neg_integer(), Value :: data_item()}, NewCallbackState :: cbstate()} |
    {error, Reason :: term()}.
 
 %% @doc
@@ -306,6 +317,7 @@ handle_cast(_Request, State) ->
 
 %% @doc
 %% start the node asynchronously
+%%
 %% these are the messages from and to other dataflow nodes
 %% do not use these tags in your callback 'handle_info' functions :
 %% 'start' | 'request' | 'item' | 'emit' | 'pull' | 'stop'
@@ -376,7 +388,7 @@ handle_info({item, {Inport, Value}},
 %%   Result = (Module:process(Inport, Value, CBState)),
    case  catch(Module:process(Inport, Value, CBState)) of
       {'EXIT', {Reason, Stacktrace}} ->
-         lager:error("'error' in component ~p caught when processing item: ~p -- ~p",
+         lager:error("'error' in component ~p, when processing item: ~p -- ~p",
             [State#c_state.component, {Inport, Value}, lager:pr_stacktrace(Stacktrace, {'EXIT', Reason})]),
          metric(?METRIC_ERRORS, 1, State),
          {noreply, State};
