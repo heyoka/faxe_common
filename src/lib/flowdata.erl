@@ -120,22 +120,30 @@ from_json_struct(JSON) ->
 
 -spec from_json_struct(binary(), binary(), binary()) -> #data_point{}|#data_batch{}.
 from_json_struct(JSON, TimeField, TimeFormat) ->
+   from_json_struct(JSON, TimeField, TimeFormat, false).
+-spec from_json_struct(binary(), binary(), binary(), true|false) -> #data_point{}|#data_batch{}.
+from_json_struct(JSON, TimeField, TimeFormat, CleanFieldNames) ->
    Struct = from_json(JSON),
-%%   lager:notice("Struct: ~p",[Struct]),
-   case Struct of
-      Map when is_map(Map) ->
-         point_from_json_map(clean_field_keys(Map), TimeField, TimeFormat);
-      List when is_list(List) ->
-         Points = [point_from_json_map(clean_field_keys(PMap), TimeField, TimeFormat) || PMap <- List],
-         #data_batch{points = Points}
-   end.
+   build_item(CleanFieldNames, Struct, TimeField, TimeFormat).
+
+build_item(false, Map, TimeField, TimeFormat) when is_map(Map) ->
+   point_from_json_map(Map, TimeField, TimeFormat);
+build_item(true, Map, TimeField, TimeFormat) when is_map(Map) ->
+   point_from_json_map(clean_field_keys(Map), TimeField, TimeFormat);
+build_item(false, List, TimeField, TimeFormat) when is_list(List) ->
+   Points = [point_from_json_map(PMap, TimeField, TimeFormat) || PMap <- List],
+   #data_batch{points = Points};
+build_item(true, List, TimeField, TimeFormat) when is_list(List) ->
+   Points = [point_from_json_map(clean_field_keys(PMap), TimeField, TimeFormat) || PMap <- List],
+   #data_batch{points = Points}.
+
 
 %% replace dots with underscores in field keys
 clean_field_keys(Map) when is_map(Map) ->
    F = fun(Key, Val, Acc) ->
       NewKey = binary:replace(Key, <<".">>, <<"_">>, [global]),
       Acc#{NewKey => Val}
-      end,
+       end,
    maps:fold(F, #{}, Map).
 
 %% from a map get a data_point record
@@ -144,6 +152,9 @@ point_from_json_map(Map) ->
    point_from_json_map(Map, ?DEFAULT_TS_FIELD, ?TF_TS_MILLI).
 
 -spec point_from_json_map(map(), binary(), binary()) -> #data_point{}.
+point_from_json_map(Map, ?DEFAULT_TS_FIELD, ?TF_TS_MILLI) ->
+   Ts = maps:get(?DEFAULT_TS_FIELD, Map, faxe_time:now()),
+   #data_point{ts = Ts, fields = maps:remove(?DEFAULT_TS_FIELD, Map)};
 point_from_json_map(Map, TimeField, TimeFormat) ->
    Ts0 = jsn_get(TimeField, Map, undefined),
    Ts =
@@ -476,7 +487,7 @@ set_tags(B = #data_batch{points = Points}, KeysValues) when is_list(KeysValues) 
 %% @end
 -spec delete_field(#data_point{}|#data_batch{}, binary()) -> #data_point{} | #data_batch{}.
 delete_field(#data_point{fields = Fields}=P, FieldName) when is_map_key(FieldName, Fields) ->
-   P#data_point{fields = maps:without([FieldName], Fields)};
+   P#data_point{fields = maps:remove(FieldName, Fields)};
 delete_field(#data_point{fields = Fields}=P, FieldName) ->
    case field(P, FieldName) of
       undefined -> P;
