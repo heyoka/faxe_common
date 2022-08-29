@@ -277,6 +277,8 @@ values(#data_batch{points = Points}, F, Default) ->
 %% @doc get the values with a key from field(s) @end
 %%
 -spec field(#data_point{}|#data_batch{}, binary(), term()) -> term().
+field(#data_point{fields = Fields}, F, _Default) when is_map_key(F, Fields) ->
+   maps:get(F, Fields);
 field(#data_point{fields = Fields}, F, Default) ->
    jsn_get(F, Fields, Default)
 ;
@@ -284,6 +286,8 @@ field(#data_batch{points = Points}, F, Default) ->
    [field(Point, F, Default) || Point <- Points].
 
 -spec field(#data_point{}|#data_batch{}, jsonpath:path()) -> undefined | term() | list(term()).
+field(#data_point{fields = Fields}, F) when is_map_key(F, Fields) ->
+   maps:get(F, Fields);
 field(#data_point{fields = Fields}, F) ->
    jsn_get(F, Fields)
 ;
@@ -358,7 +362,7 @@ set_dtag(B = #data_batch{}, DTag) ->
 %% @end
 -spec set_field(#data_point{}, jsonpath:path(), any()) -> #data_point{}.
 %% special version timestamp field
-set_field(P = #data_point{}, <<"ts">>, Value) ->
+set_field(P = #data_point{}, ?DEFAULT_TS_FIELD, Value) ->
    P#data_point{ts = Value}
 ;
 set_field(P = #data_point{fields = Fields}, Key, Value) ->
@@ -413,7 +417,10 @@ set_fields(B = #data_batch{points = Points}, KeysValues) when is_list(KeysValues
 %% @end
 -spec set(jsonpath:path(), term(), list()) -> list().
 set(Key, Value, FieldList) ->
-   jsn_set(Key, Value, FieldList).
+   case is_root_path(Key) of
+      true -> FieldList#{Key => Value};
+      false -> jsn_set(Key, Value, FieldList)
+   end.
 
 -spec tag(#data_point{}|#data_batch{}, jsonpath:path()) -> undefined | term() | list(term()|undefined).
 %%% @doc
