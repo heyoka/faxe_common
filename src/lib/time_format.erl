@@ -59,9 +59,7 @@ convert(Input, Format) ->
       {ok, DateTime} -> faxe_time:to_ms(DateTime);
       _E ->
          parse_error(Input, Format)
-   end;
-convert(Input, Format) ->
-   parse_error(Input, Format).
+   end.
 
 
 parse_error(Input, Format) ->
