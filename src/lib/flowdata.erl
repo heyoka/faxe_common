@@ -62,7 +62,7 @@
    field/3, to_s_msgpack/1, from_json/1,
    to_map/1, set_fields/3, set_tags/3, fields/2, tags/2,
    delete_fields/2, delete_tags/2, path/1, paths/1, set_fields/2,
-   to_mapstruct/1, from_json_struct/1, from_json_struct/3,
+   to_mapstruct/1, from_json_struct/1, from_json_struct/3, from_json_struct/4,
    point_from_json_map/1, point_from_json_map/3,
    set_tags/2, is_root_path/1,
    merge_points/1, merge/2, merge_points/2
