@@ -88,7 +88,6 @@
 
 -spec to_json(#data_point{} | #data_batch{}) -> binary().
 to_json(P) when is_record(P, data_point) orelse is_record(P, data_batch) ->
-%%   lager:notice("MapStruct: ~p", [to_mapstruct(P)]),
    case jiffy:encode(to_mapstruct(P), []) of
       Bin when is_binary(Bin) -> Bin;
       IoList when is_list(IoList) -> iolist_to_binary(IoList)
@@ -183,7 +182,6 @@ to_map_except(P=#data_point{}, Without) when is_list(Without) ->
 -spec extract_map(#data_point{}, map()) -> #data_point{}.
 extract_map(P = #data_point{fields = Fields}, Map) when is_map(Map) ->
    List = maps:to_list(Map),
-   lager:notice("maps:to_list: ~p",[List]),
    P#data_point{fields = Fields ++ List}.
 
 expand_json_field(P = #data_point{}, FieldName) ->
@@ -199,7 +197,6 @@ merge_points([#data_point{ts=Ts} |_Ps] = Points, Field) ->
    set_field(#data_point{ts = Ts}, Field, Res).
 merge_points([#data_point{ts=Ts} |_Ps] = Points) ->
    FMaps = [P#data_point.fields || P <- Points],
-   lager:info("FMAPs: ~p",[FMaps]),
    Res = merge_fields(FMaps),
    #data_point{ts = Ts, fields = Res}.
 merge_fields(FieldMaps) ->
@@ -366,7 +363,6 @@ set_field(P = #data_point{}, ?DEFAULT_TS_FIELD, Value) ->
    P#data_point{ts = Value}
 ;
 set_field(P = #data_point{fields = Fields}, Key, Value) ->
-%%   lager:notice("set_field(~p, ~p, ~p)", [Fields, Key, Value]),
    NewFields = set(Key, Value, Fields),
    P#data_point{fields = NewFields}
 ;
