@@ -381,16 +381,16 @@ select_first(ReturnField, Where, Mem, Default) ->
    end.
 
 
-select_any_first(ReturnField, Where, Mem) ->
-   select_any_first(ReturnField, Where, Mem, undefined).
-select_any_first(_ReturnField, [], _Mem, Default) ->
+select_any(ReturnField, Where, Mem) ->
+   select_any(ReturnField, Where, Mem, undefined).
+select_any(_ReturnField, [], _Mem, Default) ->
    Default;
-select_any_first(ReturnField, [Where|Conds], Mem, Default) ->
+select_any(ReturnField, [Where|Conds], Mem, Default) ->
    case select(ReturnField, [Where], Mem, Default) of
-      Default -> select_any_first(ReturnField, Conds, Mem, Default);
-      [undefined|_] -> select_any_first(ReturnField, Conds, Mem, Default);
-      undefined -> select_any_first(ReturnField, Conds, Mem, Default);
-      [] -> select_any_first(ReturnField, Conds, Mem, Default);
+      Default -> select_any(ReturnField, Conds, Mem, Default);
+      [undefined|_] -> select_any(ReturnField, Conds, Mem, Default);
+      undefined -> select_any(ReturnField, Conds, Mem, Default);
+      [] -> select_any(ReturnField, Conds, Mem, Default);
       [Res|_] -> Res;
       Else -> Else
    end.
@@ -413,22 +413,22 @@ select(ReturnField, Where, Mem0, Default) when is_binary(ReturnField), is_list(W
    end.
 
 
-select_any(_ReturnField, Where, Mem) ->
-   select_any(_ReturnField, Where, Mem, []).
+select_all(_ReturnField, Where, Mem) ->
+   select_all(_ReturnField, Where, Mem, []).
 
-select_any(_ReturnField, [], _Mem0, Default) ->
+select_all(_ReturnField, [], _Mem0, Default) ->
    Default;
-select_any(ReturnField, Where, Mem0, Default) ->
-   select_any(ReturnField, Where, Mem0, Default, []).
+select_all(ReturnField, Where, Mem0, Default) ->
+   select_all(ReturnField, Where, Mem0, Default, []).
 
-select_any(_ReturnField, [], _Mem0, Default, []) ->
+select_all(_ReturnField, [], _Mem0, Default, []) ->
    Default;
-select_any(_ReturnField, [], _Mem0, _Default, Results) ->
+select_all(_ReturnField, [], _Mem0, _Default, Results) ->
    Results;
-select_any(ReturnField, [Where|Conds], Mem0, Default, Results) ->
+select_all(ReturnField, [Where|Conds], Mem0, Default, Results) ->
    case select(ReturnField, [Where], Mem0, Default) of
-      [] -> select_any(ReturnField, Conds, Mem0, Default, Results);
-      Res when is_list(Res) -> select_any(ReturnField, Conds, Mem0, Default, Results++Res)
+      [] -> select_all(ReturnField, Conds, Mem0, Default, Results);
+      Res when is_list(Res) -> select_all(ReturnField, Conds, Mem0, Default, Results++Res)
    end.
 
 do_select(ReturnField, Where, Mem0, Default) when is_binary(ReturnField), is_list(Where) ->
