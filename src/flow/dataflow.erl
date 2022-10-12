@@ -94,9 +94,9 @@ create_graph(Id, Definitions) when is_map(Definitions) ->
 start_graph(Graph) ->
    start_graph(Graph, push).
 start_graph(Graph, #task_modes{} = TM) ->
-   df_graph:start_graph(Graph, TM); %#task_modes{run_mode = push});
+   graph_starter:start_graph(Graph, TM); %#task_modes{run_mode = push});
 start_graph(Graph, RunMode) ->
-   df_graph:start_graph(Graph, #task_modes{run_mode = RunMode}).
+   graph_starter:start_graph(Graph, #task_modes{run_mode = RunMode}).
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
