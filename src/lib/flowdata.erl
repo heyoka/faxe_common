@@ -598,6 +598,8 @@ set_first(B=#data_batch{points = Ps}) ->
 %% get the first (ie oldest) timestamp from a data_batch
 %% @end
 -spec first_ts(#data_batch{}) -> non_neg_integer().
+first_ts(#data_batch{points = []}) ->
+   undefined;
 first_ts(#data_batch{points = P}) ->
    ts(lists:last(P)).
 
