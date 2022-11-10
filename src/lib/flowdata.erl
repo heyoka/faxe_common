@@ -562,6 +562,8 @@ rename(Map, [From|RFrom], [To|RTo]) when is_map(Map) ->
    NewData = do_rename(Map, From, To),
    rename(NewData, RFrom, RTo).
 
+do_rename(Map, <<>>, To) ->
+   jsn_set(To, Map, #{});
 do_rename(Map, From, To) ->
    Val = jsn_get(From, Map, undefined),
    case Val of
