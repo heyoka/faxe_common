@@ -117,4 +117,19 @@ mem_select_any_jarray_undefined_default_test() ->
     TheList, 266),
   ?assertEqual(Expected, Res).
 
+
+map_get_bin_test() ->
+  M = <<"{\"key\": \"value\"}">>,
+  Expected = <<"value">>,
+  ?assertEqual(Expected, faxe_lambda_lib:map_get(<<"key">>, M)).
+
+map_get_bin_default_test() ->
+  M = <<"{\"key\": \"value\"}">>,
+  ?assertEqual(undefined, faxe_lambda_lib:map_get(<<"key1">>, M)).
+
+map_get_bin_default_given_test() ->
+  M = <<"{\"key\": \"value\"}">>,
+  ?assertEqual(0, faxe_lambda_lib:map_get(<<"key1">>, M, 0)).
+
+
 -endif.

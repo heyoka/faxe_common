@@ -360,10 +360,13 @@ random_latin_string(Min, Max) when is_integer(Min), is_integer(Max), Min > 0, Ma
 
 %%% maps
 -spec map_get(binary(), map()|binary()) -> term().
-map_get(Key, Map) when is_map(Map)  ->
-   maps:get(Key, Map, undefined);
-map_get(Key, JBin) when is_binary(JBin) ->
-   maps:get(Key, get_jsn(JBin), undefined).
+map_get(Key, Map) ->
+   map_get(Key, Map, undefined).
+
+map_get(Key, JBin, Default) when is_binary(JBin) ->
+   maps:get(Key, get_jsn(JBin), Default);
+map_get(Key, Map, Default) when is_map(Map) ->
+   maps:get(Key, Map, Default).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% json arrays
