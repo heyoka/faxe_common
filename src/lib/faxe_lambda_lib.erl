@@ -361,7 +361,7 @@ random_latin_string(Min, Max) when is_integer(Min), is_integer(Max), Min > 0, Ma
 %%% maps
 -spec map_get(binary(), map()|binary()) -> term().
 map_get(Key, Map) ->
-   map_get(Key, Map, undefined).
+   map_get(Key, Map, <<"undefined">>).
 
 map_get(Key, JBin, Default) when is_binary(JBin) ->
    maps:get(Key, get_jsn(JBin), Default);

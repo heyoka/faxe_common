@@ -125,11 +125,14 @@ map_get_bin_test() ->
 
 map_get_bin_default_test() ->
   M = <<"{\"key\": \"value\"}">>,
-  ?assertEqual(undefined, faxe_lambda_lib:map_get(<<"key1">>, M)).
+  ?assertEqual(<<"undefined">>, faxe_lambda_lib:map_get(<<"key1">>, M)).
 
 map_get_bin_default_given_test() ->
   M = <<"{\"key\": \"value\"}">>,
   ?assertEqual(0, faxe_lambda_lib:map_get(<<"key1">>, M, 0)).
 
+map_get_bin_default2_test() ->
+  M = <<"{\"key\": \"value\"}">>,
+  ?assertEqual(<<"default">>, faxe_lambda_lib:map_get(<<"key1">>, M, <<"default">>)).
 
 -endif.
