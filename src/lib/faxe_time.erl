@@ -371,7 +371,9 @@ is_duration_string(Bin) when is_binary(Bin) ->
    case catch(faxe_time:duration_to_ms(Bin)) of
       T when is_integer(T) -> true;
       _ -> false
-   end.
+   end;
+is_duration_string(_) ->
+   false.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%% timer %%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% @doc

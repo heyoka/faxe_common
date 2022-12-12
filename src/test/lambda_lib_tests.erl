@@ -135,4 +135,20 @@ map_get_bin_default2_test() ->
   M = <<"{\"key\": \"value\"}">>,
   ?assertEqual(<<"default">>, faxe_lambda_lib:map_get(<<"key1">>, M, <<"default">>)).
 
+
+is_duration_succeeds_test() ->
+  ?assertEqual(true, faxe_lambda_lib:is_duration(<<"234ms">>)).
+
+is_duration_succeeds_2_test() ->
+  ?assertEqual(true, faxe_lambda_lib:is_duration(<<"0h">>)).
+
+is_duration_fails_1_test() ->
+  ?assertEqual(false, faxe_lambda_lib:is_duration(<<"234mms">>)).
+
+is_duration_fails_2_test() ->
+  ?assertEqual(false, faxe_lambda_lib:is_duration(314.2566)).
+
+is_duration_fails_3_test() ->
+  ?assertEqual(false, faxe_lambda_lib:is_duration(<<"314.2566s">>)).
+
 -endif.
