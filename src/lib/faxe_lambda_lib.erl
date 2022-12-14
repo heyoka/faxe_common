@@ -13,8 +13,14 @@
 -compile({no_auto_import,[map_get/2]}).
 %%% @doc
 
+
 %%% additional type checks
 is_duration(Dur) -> faxe_time:is_duration_string(Dur).
+is_boolean(In) -> is_bool(In).
+is_bool(In) when In == true orelse In == false -> true;
+is_bool(_) -> false.
+is_int(In) -> erlang:is_integer(In).
+
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% string functions
