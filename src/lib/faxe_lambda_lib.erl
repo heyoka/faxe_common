@@ -433,16 +433,29 @@ prepare_conditions([{<<"regex">>, Path, Pattern}|Conditions], Acc) ->
 prepare_conditions([{regex, Path, Pattern}|Conditions], Acc) ->
    prepare_conditions(Conditions, prepare_cond_fun(Path, Pattern, Acc)).
 
+%%prepare_cond_fun(Path, Pattern, Acc) ->
+%%   CondFun =
+%%      fun(Val) ->
+%%         case re:run(Val, Pattern, []) of
+%%            nomatch -> false;
+%%            {match, _} -> true
+%%         end
+%%      end,
+%%   Acc ++ [{Path, CondFun}].
+
 prepare_cond_fun(Path, Pattern, Acc) ->
    CondFun =
       fun(Val) ->
-         case re:run(Val, Pattern, []) of
+         try re:run(Val, Pattern, []) of
             nomatch -> false;
             {match, _} -> true
+         catch
+            C:R:S ->
+               Message = erl_error:format_exception(C, R, S, #{stack_trim_fun => fun(_, _, _) -> false end}),
+               throw(Message)
          end
       end,
    Acc ++ [{Path, CondFun}].
-
 
 
 
