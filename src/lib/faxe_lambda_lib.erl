@@ -452,7 +452,7 @@ prepare_cond_fun(Path, Pattern, Acc) ->
          catch
             C:R:S ->
                Message = erl_error:format_exception(C, R, S, #{stack_trim_fun => fun(_, _, _) -> false end}),
-               throw(Message)
+               throw(unicode:characters_to_list(Message))
          end
       end,
    Acc ++ [{Path, CondFun}].
