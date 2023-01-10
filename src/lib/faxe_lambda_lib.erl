@@ -428,15 +428,20 @@ select(ReturnField, Where0, Mem0, Default) when is_binary(ReturnField), is_list(
 prepare_conditions([], Acc) -> Acc;
 prepare_conditions([{_Path, _Pattern} = Cond|Conditions], Acc) ->
    prepare_conditions(Conditions, Acc ++ [Cond]);
+prepare_conditions([{<<"regex">>, Path, Pattern}|Conditions], Acc) ->
+   prepare_conditions(Conditions, prepare_cond_fun(Path, Pattern, Acc));
 prepare_conditions([{regex, Path, Pattern}|Conditions], Acc) ->
+   prepare_conditions(Conditions, prepare_cond_fun(Path, Pattern, Acc)).
+
+prepare_cond_fun(Path, Pattern, Acc) ->
    CondFun =
-   fun(Val) ->
-      case re:run(Val, Pattern, []) of
-         nomatch -> false;
-         _ -> true
-      end
-   end,
-   prepare_conditions(Conditions, Acc ++ [{Path, CondFun}]).
+      fun(Val) ->
+         case re:run(Val, Pattern, []) of
+            nomatch -> false;
+            _ -> true
+         end
+      end,
+   Acc ++ [{Path, CondFun}].
 
 
 

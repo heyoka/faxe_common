@@ -143,7 +143,7 @@ regex_select_jarray_2_test() ->
 regex_select_jarray_3_test() ->
   TheList = json_list_data(),
   Expected = [<<"cond_vac">>],
-  Res = faxe_lambda_lib:select_all(<<"key">>, [{regex, <<"dataformat">>, <<"^[0-9]{4}\.1110$">>}],
+  Res = faxe_lambda_lib:select_all(<<"key">>, [{<<"regex">>, <<"dataformat">>, <<"^[0-9]{4}\.1110$">>}],
     TheList, 266),
   ?assertEqual(Expected, Res).
 
@@ -192,7 +192,8 @@ regex_select_first_jarray_1_test() ->
 regex_select_first_jarray_2_test() ->
   TheList = json_list_data(),
   Expected = <<"0001.1120">>,
-  Res = faxe_lambda_lib:select_first(<<"dataformat">>, [{<<"stream">>, <<"23898hduh2diuihd">>}, {regex, <<"key">>, <<"^cond">>}],
+  Res = faxe_lambda_lib:select_first(<<"dataformat">>,
+    [{<<"stream">>, <<"23898hduh2diuihd">>}, {<<"regex">>, <<"key">>, <<"^cond">>}],
     TheList, []),
   ?assertEqual(Expected, Res).
 
