@@ -414,7 +414,8 @@ select(ReturnField, Mem) ->
    select(ReturnField, [], Mem).
 select(ReturnField, Where, Mem) ->
    select(ReturnField, Where, Mem, undefined).
-select(ReturnField, Where, Mem0, Default) when is_binary(ReturnField), is_list(Where) ->
+select(ReturnField, Where0, Mem0, Default) when is_binary(ReturnField), is_list(Where0) ->
+   Where = prepare_conditions(Where0, []),
    H = erlang:phash2({ReturnField, Where, Mem0, Default}),
    case select_cache(H) of
       false ->
@@ -423,6 +424,21 @@ select(ReturnField, Where, Mem0, Default) when is_binary(ReturnField), is_list(W
          Res;
       CachedRes -> CachedRes
    end.
+
+prepare_conditions([], Acc) -> Acc;
+prepare_conditions([{_Path, _Pattern} = Cond|Conditions], Acc) ->
+   prepare_conditions(Conditions, Acc ++ [Cond]);
+prepare_conditions([{regex, Path, Pattern}|Conditions], Acc) ->
+   CondFun =
+   fun(Val) ->
+      case re:run(Val, Pattern, []) of
+         nomatch -> false;
+         _ -> true
+      end
+   end,
+   prepare_conditions(Conditions, Acc ++ [{Path, CondFun}]).
+
+
 
 
 select_all(_ReturnField, Where, Mem) ->
