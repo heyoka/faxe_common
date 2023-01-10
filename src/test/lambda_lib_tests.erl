@@ -204,6 +204,12 @@ regex_select_first_jarray_default_test() ->
     TheList, []),
   ?assertEqual(Expected, Res).
 
+regex_select_first_jarray_throw_test() ->
+  TheList = json_list_data(),
+  Expected = badarg,
+  ?assertException(error, Expected, faxe_lambda_lib:select_first(<<"key">>, [{regex, <<"dataformat">>, <<"19[0-9{2}$">>}],
+    TheList, [])).
+
 map_get_bin_test() ->
   M = <<"{\"key\": \"value\"}">>,
   Expected = <<"value">>,

@@ -438,7 +438,7 @@ prepare_cond_fun(Path, Pattern, Acc) ->
       fun(Val) ->
          case re:run(Val, Pattern, []) of
             nomatch -> false;
-            _ -> true
+            {match, _} -> true
          end
       end,
    Acc ++ [{Path, CondFun}].
