@@ -22,7 +22,8 @@
    ip_to_bin/1, device_name/0, proplists_merge/2,
    levenshtein/2, build_topic/2, build_topic/1,
    to_bin/1, flip_map/1,
-   get_erlang_version/0, get_device_name/0, bytes/1, to_num/1, save_binary_to_atom/1, to_rkey/1, random_latin_binary/2, random_latin_binary/1]).
+   get_erlang_version/0, get_device_name/0, bytes/1, to_num/1, save_binary_to_atom/1,
+   to_rkey/1, random_latin_binary/2, random_latin_binary/1, type/1]).
 
 -define(HTTP_PROTOCOL, <<"http://">>).
 
@@ -303,6 +304,14 @@ random_binary_from_chars(Length, Chars) ->
       <<>>,
       lists:seq(1, Length)
    ).
+
+type(Bin) when is_binary(Bin) -> <<"string">>;
+type(Int) when is_integer(Int) -> <<"integer">>;
+type(Float) when is_float(Float) -> <<"float">>;
+type(L) when is_list(L) -> <<"list">>;
+type(T) when is_tuple(T) -> <<"tuple">>;
+type(undefined) -> <<"undefined">>;
+type(_) -> <<"unknown">>.
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% TESTS %%%%%%%%%
