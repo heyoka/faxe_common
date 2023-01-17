@@ -363,6 +363,12 @@ random_latin_string(Length) when is_integer(Length), Length > 0 ->
 random_latin_string(Min, Max) when is_integer(Min), is_integer(Max), Min > 0, Max > Min ->
    faxe_util:random_latin_binary(random(Min, Max)).
 
+%% @doc
+%% Get a strong v4 UUID string(bin) (using crypto/openssl)
+%% @end
+uuidv4() ->
+   list_to_binary(faxe_util:uuid_string()).
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% list/map functions
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
