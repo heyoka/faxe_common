@@ -80,7 +80,7 @@
    ts/2,
    merge/1,
    set_dtag/2,
-   to_num/1, to_num/2, with/2]).
+   to_num/1, to_num/2, with/2, fields/3]).
 
 -define(DEFAULT_FIELDS, [<<"id">>, <<"df">>, <<"ts">>]).
 -define(DEFAULT_TS_FIELD, <<"ts">>).
@@ -296,6 +296,12 @@ fields(#data_point{fields = _Fields}, []) ->
    [];
 fields(#data_point{fields = Fields}, PathList) when is_list(PathList) ->
    jsn_getlist(PathList, Fields).
+
+%% @doc get a list of field-values with a list of keys/paths and a default value for all list entries
+fields(#data_point{fields = _Fields}, [], _Default) ->
+   [];
+fields(#data_point{fields = Fields}, PathList, Default) when is_list(PathList) ->
+   jsn_getlist(PathList, Fields, Default).
 
 %% like maps:with but for deeply nested data
 -spec with(#data_point{}|#data_batch{}, list()) -> #data_point{}|#data_batch{}.
@@ -621,10 +627,14 @@ jsn_get(_Path, Map, Default) when map_size(Map) == 0 ->
    Default;
 jsn_get(Path, Map, Default) ->
    jsn:get(path(Path), Map, Default).
-jsn_getlist(_PathList, Empty) when map_size(Empty) == 0  ->
+
+jsn_getlist(PathList, M) ->
+   jsn_getlist(PathList, M, undefined).
+
+jsn_getlist(_PathList, Empty, _Def) when map_size(Empty) == 0  ->
    [];
-jsn_getlist(PathList, Map) when is_list(PathList) ->
-   jsn:get_list(paths(PathList), Map).
+jsn_getlist(PathList, Map, Default) when is_list(PathList) ->
+   jsn:get_list(paths(PathList), Map, Default).
 
 jsn_set(Path, Val, Map) ->
    jsn:set(path(Path), Map, Val).
