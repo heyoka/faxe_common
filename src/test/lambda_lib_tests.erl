@@ -243,4 +243,30 @@ is_duration_fails_2_test() ->
 is_duration_fails_3_test() ->
   ?assertEqual(false, faxe_lambda_lib:is_duration(<<"314.2566s">>)).
 
+
+str_repeat_replace_1_test() ->
+  Expected = [<<"{\"stream_id\": 1, \"value1\": 14}">>,
+    <<"{\"stream_id\": 2, \"value1\": 14}">>,
+    <<"{\"stream_id\": 3, \"value1\": 14}">>,
+    <<"{\"stream_id\": 4, \"value1\": 14}">>,
+    <<"{\"stream_id\": 5, \"value1\": 14}">>],
+  ?assertEqual(Expected, faxe_lambda_lib:str_repeat_replace(
+    <<"{\"stream_id\": #sid, \"value1\": 14}">>, <<"#sid">>, [<<"1">>,<<"2">>,<<"3">>,<<"4">>,<<"5">>])).
+
+
+str_repeat_replace_global_test() ->
+  Expected =
+    [ <<"{\"stream_id\": \"1\", \"value1\": 14}">>,
+      <<"{\"stream_id\": \"2\", \"value2\": 14}">>,
+      <<"{\"stream_id\": \"3\", \"value3\": 14}">>,
+      <<"{\"stream_id\": \"4\", \"value4\": 14}">>,
+      <<"{\"stream_id\": \"5\", \"value5\": 14}">>],
+  ?assertEqual(Expected, faxe_lambda_lib:str_repeat_replace(
+    <<"{\"stream_id\": \"#sid\", \"value#sid\": 14}">>, <<"#sid">>, [<<"1">>,<<"2">>,<<"3">>,<<"4">>,<<"5">>])).
+
+str_repeat_replace_fails_test() ->
+  ?assertThrow("str_repeat_replace/3 given invalid parameter(s)",
+    faxe_lambda_lib:str_repeat_replace(<<"{\"stream_id\": \"#sid\", \"value#sid\": 14}">>, <<"#sid">>, <<"1">>)
+  ).
+
 -endif.

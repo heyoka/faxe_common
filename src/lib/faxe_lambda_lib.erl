@@ -225,6 +225,11 @@ from_json_string(Bin) when is_binary(Bin) ->
       _:_ -> #{}
    end.
 
+str_repeat_replace(String, Placeholder, ValueList) when is_binary(String), is_binary(Placeholder), is_list(ValueList) ->
+   [binary:replace(String, Placeholder, Replacement, [global]) || Replacement <- ValueList];
+str_repeat_replace(_, _, _) ->
+   throw("str_repeat_replace/3 given invalid parameter(s)").
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% additional
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -439,15 +444,6 @@ prepare_conditions([{<<"regex">>, Path, Pattern}|Conditions], Acc) ->
 prepare_conditions([{regex, Path, Pattern}|Conditions], Acc) ->
    prepare_conditions(Conditions, prepare_cond_fun(Path, Pattern, Acc)).
 
-%%prepare_cond_fun(Path, Pattern, Acc) ->
-%%   CondFun =
-%%      fun(Val) ->
-%%         case re:run(Val, Pattern, []) of
-%%            nomatch -> false;
-%%            {match, _} -> true
-%%         end
-%%      end,
-%%   Acc ++ [{Path, CondFun}].
 
 prepare_cond_fun(Path, Pattern, Acc) ->
    CondFun =
