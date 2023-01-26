@@ -13,6 +13,7 @@
 params(<<"combine">>) -> [{1, 2}];
 params(<<"merge">>) -> [{1, 2}];
 params(<<"join">>) -> {all, new_port, 1};
+params(<<"join2">>) -> {all, new_port, 1};
 params(<<"union">>) -> {all, new_port, 1};
 params(<<"group_union">>) -> {all, new_port, 1};
 params(<<"state_sequence">>) -> {all, new_port, 1};
