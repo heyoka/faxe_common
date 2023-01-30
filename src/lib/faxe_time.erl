@@ -61,7 +61,7 @@
    timer_start/2,
    timer_next/1,
    timer_cancel/1
-   , timer_now/1, init_timer/3, timer_new/3]).
+   , timer_now/1, init_timer/3, timer_new/3, is_timestamp/1]).
 
 %%% @doc
 %%% get "now" in milliseconds,
@@ -284,6 +284,12 @@ get(year, Ts) ->
    {{Year, _M, _D},_T} = Ts,
    Year.
 
+%% check whether to given data is a timestamp in milliseconds
+-spec is_timestamp(any()) -> true|false.
+is_timestamp(Ts) when is_integer(Ts) ->
+   byte_size(integer_to_binary(Ts)) == 13;
+is_timestamp(_) ->
+   false.
 
 
 %% check if millisecond timestamp is exactly on the beginning of the given unit

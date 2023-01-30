@@ -135,6 +135,8 @@ get_connection(Pid) ->
 remove_node_entries(Pid) ->
   ets:match_delete(node_connections, {Pid, '_'}).
 
+out(_Client, #conreg{flowid = undefined, nodeid = undefined}) ->
+  ok;
 out(Client, Con=#conreg{}) ->
   write(Client, Con),
   publish(Con).
