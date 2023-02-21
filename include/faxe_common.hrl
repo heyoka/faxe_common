@@ -88,5 +88,13 @@
 
 }).
 
+%% persistent state
+-record(node_state, {
+   flownode_id  :: {binary(), binary()},
+   state    :: term()|cbstate(),
+   ts = 0   :: pos_integer()
+}).
+
+
 
 

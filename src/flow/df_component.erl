@@ -9,7 +9,7 @@
 
 %% API
 -export([start_link/6]).
--export([start_node/3, inports/1, outports/1, start_async/3, wants/1, emits/1, add_options/0, add_options/1]).
+-export([start_node/3, inports/1, outports/1, start_async/3, wants/1, emits/1, add_options/0, add_options/1, start_async/4]).
 
 %% Callback API
 
@@ -25,11 +25,12 @@
 -define(MSG_Q_LENGTH_HIGH_WATERMARK, 15).
 
 -type auto_request()    :: 'all' | 'emit' | 'none'.
+-type auto_persist()    :: true | false.
 -type item_type()       :: nil | batch | point | both.
 
 -type df_port()         :: non_neg_integer().
 
-
+-type data_item()       :: #data_point{} | #data_batch{}.
 %%%===================================================================
 %%% CALLBACKS
 %%%===================================================================
@@ -41,6 +42,10 @@
 %%
 -callback init(NodeId :: term(), Inputs :: list(), Args :: term())
        -> {ok, auto_request(), cbstate()}.
+-callback init(NodeId :: term(), Inputs :: list(), Args :: term(), PreviousState :: term())
+       ->
+       {ok, auto_request(), cbstate()} |
+       {ok, auto_persist(), cbstate()}.
 
 
 
@@ -64,30 +69,36 @@
 %% {emit_request, OutPort :: port(), Value :: term(), ReqPort :: port(), ReqPid :: pid(), cbstate()}
 %% @end
 %%
--callback process(Inport :: non_neg_integer(), Value :: #data_point{} | #data_batch{}, State :: cbstate())
+-callback process(Inport :: non_neg_integer(), Value :: data_item(), State :: cbstate())
        ->
        {ok, cbstate()} |
 
        {emit,
-          { Port :: df_port(), Value :: term() }, cbstate()
+          { Port :: df_port(), Value :: data_item() }, cbstate()
        } |
        {emit,
-          Value :: term(), cbstate()
+          Value :: data_item(), cbstate()
        } |
        {request,
           { ReqPort :: df_port(), ReqPid :: pid() }, cbstate()
        } |
        {emit_request,
-          { OutPort :: df_port(), Value :: term() }, { ReqPort :: df_port(), ReqPid :: pid() }, cbstate()
+          { OutPort :: df_port(), Value :: data_item() }, { ReqPort :: df_port(), ReqPid :: pid() }, cbstate()
        } |
        {emit_request,
-          Value :: term(), { ReqPort :: df_port(), ReqPid :: pid() }, cbstate()
+          Value :: data_item(), { ReqPort :: df_port(), ReqPid :: pid() }, cbstate()
+       } |
+       {emit_persist,
+          { OutPort :: df_port(), Value :: data_item()}, PersistData ::term(), cbstate()
+       } |
+       {emit_persist,
+          Value :: data_item(), PersistData ::term(), cbstate()
        } |
        {emit_ack,
-          { OutPort :: df_port(), Value :: term() }, DTag :: non_neg_integer(), cbstate()
+          { OutPort :: df_port(), Value :: data_item()}, DTag :: non_neg_integer(), cbstate()
        } |
        {emit_ack,
-          Value :: term(), DTag :: non_neg_integer(), cbstate()
+          Value :: data_item(), DTag :: non_neg_integer(), cbstate()
        } |
 
        {error, Reason :: term()}.
@@ -159,7 +170,7 @@
 %% @end
 -callback handle_info(Request :: term(), State :: cbstate()) ->
    {ok, NewCallbackState :: cbstate()} |
-   {emit, {Port :: non_neg_integer(), Value :: term()}, NewCallbackState :: cbstate()} |
+   {emit, {Port :: non_neg_integer(), Value :: data_item()}, NewCallbackState :: cbstate()} |
    {error, Reason :: term()}.
 
 %% @doc
@@ -209,6 +220,8 @@ start_link(Component, GraphId, NodeId, Inports, Outports, Args) ->
 start_node(Server, Inputs, FlowMode) ->
    gen_server:call(Server, {start, Inputs, FlowMode}).
 
+start_async(Server, Inputs, FlowMode, InitialState) ->
+   Server ! {start, Inputs, FlowMode, InitialState}.
 start_async(Server, Inputs, FlowMode) ->
    Server ! {start, Inputs, FlowMode}.
 
@@ -312,12 +325,14 @@ handle_cast(_Request, State) ->
 %% you will not receive the info message in the callback with these
 %%
 %% @end
-handle_info({start, Inputs, FlowMode},
+handle_info({start, Inputs, FlowMode, InitialState},
     State=#c_state{component = CB, cb_state = CBState, node_index = NodeIndex}) ->
 
 %%   lager:info("component ~p starts with options; ~p and inputs: ~p", [CB, CBState, Inputs]),
    Opts = CBState,
-   Inited = CB:init(NodeIndex, Inputs, Opts),
+   Inited = callback_init(CB, NodeIndex, Inputs, Opts, InitialState),
+%%      CB:init(NodeIndex, Inputs, Opts),
+   %% for the time being we use the auto_request for the auto_persist feature
    {AReq, NewCBState} =
       case Inited of
 
@@ -327,14 +342,17 @@ handle_info({start, Inputs, FlowMode},
          {error, What}                 -> lager:error("Starting failed with Reason: ~p",[What]), erlang:error(What)
       end,
 
-   AR = case FlowMode of pull -> AReq; push -> none end,
+   AutoPersist = AReq == true,
+   lager:info("~p uses auto_persist: ~p",[NodeIndex, AutoPersist]),
+%%   AR = case FlowMode of pull -> AReq; push -> none end,
    CallbackHandlesInfo = erlang:function_exported(CB, handle_info, 2),
    CallbackHandlesAck = erlang:function_exported(CB, handle_ack, 3),
 
    {noreply,
       State#c_state{
          inports = Inputs,
-         auto_request = AR,
+%%         auto_request = AR,
+         auto_persist = AutoPersist,
          cb_state = NewCBState,
          cb_inited = true,
          flow_mode = FlowMode,
@@ -376,13 +394,15 @@ handle_info({item, {Inport, Value}},
 %%   Result = (Module:process(Inport, Value, CBState)),
    case  catch(Module:process(Inport, Value, CBState)) of
       {'EXIT', {Reason, Stacktrace}} ->
-         lager:error("'error' in component ~p caught when processing item: ~p -- ~p",
+         lager:error("'error' in component ~p, when processing item: ~p -- ~p",
             [State#c_state.component, {Inport, Value}, lager:pr_stacktrace(Stacktrace, {'EXIT', Reason})]),
          metric(?METRIC_ERRORS, 1, State),
          {noreply, State};
 
       Result ->
          {NewState, Requested, REmitted} = handle_process_result(Result, State),
+         %% node state persistence
+         maybe_persist(NewState),
 %%         metric(?METRIC_PROCESSING_TIME, (erlang:monotonic_time(microsecond)-TStart)/1000, State),
          case FMode == pull of
             true -> case {Requested, AR, REmitted} of
@@ -421,6 +441,7 @@ handle_info(stop, State=#c_state{node_id = _N, component = Mod, cb_state = CBSta
 
 %% Callback Module handle_info
 handle_info(Req, State = #c_state{component = Module, cb_state = CB, cb_handle_info = true}) ->
+   {_, NewState} = CR =
    case Module:handle_info(Req, CB) of
       {ok, CB0} ->
          {noreply, State#c_state{cb_state = CB0}};
@@ -434,8 +455,10 @@ handle_info(Req, State = #c_state{component = Module, cb_state = CB, cb_handle_i
          {noreply, State#c_state{cb_state = CB3}};
       {error, _Reason} ->
          {noreply, State#c_state{cb_state = CB}}
-   end
-
+   end,
+   %% node state persistence
+   maybe_persist(NewState),
+   CR
 ;
 handle_info(_Req, State=#c_state{cb_handle_info = false}) ->
    {noreply, State}
@@ -458,6 +481,18 @@ cb_handle_ack(Mode, DTag, State = #c_state{cb_state = CB, component = Module}) -
       {error, _Reason} ->
          State
    end.
+
+
+
+%% initialize the callback, maybe with initial/persisted state
+callback_init(CB, NodeIndex, Inputs, Opts, undefined) ->
+   CB:init(NodeIndex, Inputs, Opts);
+callback_init(CB, NodeIndex, Inputs, Opts, InitialState) ->
+   case erlang:function_exported(CB, init, 4) of
+      true -> CB:init(NodeIndex, Inputs, Opts, InitialState);
+      false -> CB:init(NodeIndex, Inputs, Opts)
+   end.
+
 
 %%--------------------------------------------------------------------
 -spec(terminate(Reason :: (normal | shutdown | {shutdown, term()} | term()),
@@ -537,6 +572,11 @@ maybe_request_items(_Port, _Pids, push) ->
 maybe_request_items(Port, Pids, pull) ->
    dataflow:request_items(Port, Pids).
 
+
+maybe_persist(#c_state{auto_persist = false}) ->
+   ok;
+maybe_persist(#c_state{cb_state = CBState, node_index = FNId}) ->
+   faxe_db:save_node_state(FNId, CBState).
 
 %%%===================================================================
 %%% PORTS for modules

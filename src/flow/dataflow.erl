@@ -30,7 +30,7 @@
    build_options/3,
    maybe_check_opts/2,
    maybe_debug/5,
-   ack/2, ack/3]).
+   ack/2, ack/3, persist/2]).
 
 %%====================================================================
 %% CALLBACK API functions
@@ -140,7 +140,8 @@ retrieve_dtag(#data_batch{points = Points}) ->
    P = lists:last(Points),
    {multi, P#data_point.dtag}.
 
-
+persist(ComponentIdx, What) ->
+   faxe_db:persist_state(ComponentIdx, What).
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
