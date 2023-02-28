@@ -42,7 +42,7 @@
 %%
 -callback init(NodeId :: term(), Inputs :: list(), Args :: term())
        -> {ok, auto_request(), cbstate()}.
--callback init(NodeId :: term(), Inputs :: list(), Args :: term(), PreviousState :: term())
+-callback init(NodeId :: term(), Inputs :: list(), Args :: term(), PreviousState :: #node_state{})
        ->
        {ok, auto_request(), cbstate()} |
        {ok, auto_persist(), cbstate()}.
@@ -489,7 +489,9 @@ callback_init(CB, NodeIndex, Inputs, Opts, undefined) ->
    CB:init(NodeIndex, Inputs, Opts);
 callback_init(CB, NodeIndex, Inputs, Opts, InitialState) ->
    case erlang:function_exported(CB, init, 4) of
-      true -> CB:init(NodeIndex, Inputs, Opts, InitialState);
+      true ->
+         lager:notice("[~p] start with persisted state",[NodeIndex]),
+         CB:init(NodeIndex, Inputs, Opts, InitialState);
       false -> CB:init(NodeIndex, Inputs, Opts)
    end.
 
