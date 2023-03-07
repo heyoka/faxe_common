@@ -141,7 +141,7 @@ retrieve_dtag(#data_batch{points = Points}) ->
    {multi, P#data_point.dtag}.
 
 persist(ComponentIdx, What) ->
-   faxe_db:persist_state(ComponentIdx, What).
+   faxe_db:save_node_state(ComponentIdx, What).
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

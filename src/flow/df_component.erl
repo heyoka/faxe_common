@@ -578,7 +578,7 @@ maybe_request_items(Port, Pids, pull) ->
 maybe_persist(#c_state{auto_persist = false}) ->
    ok;
 maybe_persist(#c_state{cb_state = CBState, node_index = FNId}) ->
-   faxe_db:save_node_state(FNId, CBState).
+   dataflow:persist(FNId, CBState).
 
 %%%===================================================================
 %%% PORTS for modules
