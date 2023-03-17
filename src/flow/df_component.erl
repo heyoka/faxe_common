@@ -325,8 +325,13 @@ handle_cast(_Request, State) ->
 %% you will not receive the info message in the callback with these
 %%
 %% @end
-handle_info({start, Inputs, FlowMode, InitialState},
+handle_info({start, Inputs, #task_modes{run_mode = FlowMode, state_persistence = StatePersistence}, InitialState},
     State=#c_state{component = CB, cb_state = CBState, node_index = NodeIndex}) ->
+
+   %% temp solution to know, whether we run in state_persistence mode
+   %% we put the state_persistence flag in the process dictionary, this is used by the dataflow module to tell if
+   %% state from a node should actually be persisted
+   put(state_persistence, StatePersistence),
 
 %%   lager:info("component ~p starts with options; ~p and inputs: ~p", [CB, CBState, Inputs]),
    Opts = CBState,
@@ -490,7 +495,7 @@ callback_init(CB, NodeIndex, Inputs, Opts, undefined) ->
 callback_init(CB, NodeIndex, Inputs, Opts, InitialState) ->
    case erlang:function_exported(CB, init, 4) of
       true ->
-         lager:notice("[~p] start with persisted state",[NodeIndex]),
+         lager:notice("[~p] start with persisted state ~p",[NodeIndex, InitialState]),
          CB:init(NodeIndex, Inputs, Opts, InitialState);
       false -> CB:init(NodeIndex, Inputs, Opts)
    end.

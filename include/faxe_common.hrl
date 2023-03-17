@@ -80,11 +80,12 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 -record(task_modes, {
-   temporary = false    :: true|false,
-   temp_ttl = infinity  :: infinity|non_neg_integer(),
-   permanent = false    :: true|false,
-   run_mode = push      :: push|pull,
-   concurrency = 1      :: non_neg_integer()
+   temporary = false          :: true|false,
+   temp_ttl = infinity        :: infinity|non_neg_integer(),
+   permanent = false          :: true|false,
+   run_mode = push            :: push|pull,
+   concurrency = 1            :: non_neg_integer(),
+   state_persistence = true   :: true|false
 
 }).
 

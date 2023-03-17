@@ -30,7 +30,7 @@
    build_options/3,
    maybe_check_opts/2,
    maybe_debug/5,
-   ack/2, ack/3, persist/2]).
+   ack/2, ack/3, persist/2, persisted/0]).
 
 %%====================================================================
 %% CALLBACK API functions
@@ -140,8 +140,20 @@ retrieve_dtag(#data_batch{points = Points}) ->
    P = lists:last(Points),
    {multi, P#data_point.dtag}.
 
-persist(ComponentIdx, What) ->
-   faxe_db:save_node_state(ComponentIdx, What).
+%% maybe persist state
+%% uses the process dictionary
+persist(ComponentIdx, StateData) ->
+   %% use the process' dictionary to decide whether we are in persistence mode
+   case get(state_persistence) of
+      true -> faxe_db:save_node_state(ComponentIdx, StateData);
+      _ -> ok
+   end.
+
+%% whether state should be persisted for the calling process (df_component behaviour)
+%% uses the process dictionary
+persisted() ->
+   get(state_persistence) == true.
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
