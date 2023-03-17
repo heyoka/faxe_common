@@ -217,8 +217,8 @@ add_options(Default) ->
 start_link(Component, GraphId, NodeId, Inports, Outports, Args) ->
    gen_server:start_link(?MODULE, [Component, GraphId, NodeId, Inports, Outports, Args], []).
 
-start_node(Server, Inputs, FlowMode) ->
-   gen_server:call(Server, {start, Inputs, FlowMode}).
+start_node(Server, Inputs, StartContext) ->
+   gen_server:call(Server, {start, Inputs, StartContext}).
 
 start_async(Server, Inputs, FlowMode, InitialState) ->
    Server ! {start, Inputs, FlowMode, InitialState}.
@@ -274,10 +274,15 @@ init(#c_state{} = PersistedState) ->
    {ok, PersistedState}.
 
 
-handle_call({start, Inputs, FlowMode}, _From,
-    State=#c_state{component = CB, cb_state = CBState, node_index = NodeIndex}) ->
+handle_call({start, Inputs, #task_modes{run_mode = FlowMode, state_persistence = StatePersistence}},
+    _From, State=#c_state{component = CB, cb_state = CBState, node_index = NodeIndex}) ->
 
-   lager:debug("component ~p starts with options; ~p", [CB, CBState]),
+   %% temp solution to know, whether we run in state_persistence mode
+   %% we put the state_persistence flag in the process dictionary, this is used by the dataflow module to tell if
+   %% state from a node should actually be persisted
+   put(state_persistence, StatePersistence),
+
+%%   lager:debug("component ~p starts with options; ~p", [CB, CBState]),
    Opts = CBState,
    Inited = CB:init(NodeIndex, Inputs, Opts),
    {AReq, NewCBState} =
@@ -447,20 +452,20 @@ handle_info(stop, State=#c_state{node_id = _N, component = Mod, cb_state = CBSta
 %% Callback Module handle_info
 handle_info(Req, State = #c_state{component = Module, cb_state = CB, cb_handle_info = true}) ->
    {_, NewState} = CR =
-   case Module:handle_info(Req, CB) of
-      {ok, CB0} ->
-         {noreply, State#c_state{cb_state = CB0}};
-      {emit, {_Port, _Val} = Data, CB1} ->
-         handle_info({emit, Data}, State#c_state{cb_state = CB1});
-      {emit, Data, CB1} ->
-         handle_info({emit, {1, Data}}, State#c_state{cb_state = CB1});
-      {stop, Reason, CB3} ->
-         lager:notice("stop message from ~p node with reason ~p",[Module, Reason]),
-         faxe:stop_task(State#c_state.graph_id),
-         {noreply, State#c_state{cb_state = CB3}};
-      {error, _Reason} ->
-         {noreply, State#c_state{cb_state = CB}}
-   end,
+      case Module:handle_info(Req, CB) of
+         {ok, CB0} ->
+            {noreply, State#c_state{cb_state = CB0}};
+         {emit, {_Port, _Val} = Data, CB1} ->
+            handle_info({emit, Data}, State#c_state{cb_state = CB1});
+         {emit, Data, CB1} ->
+            handle_info({emit, {1, Data}}, State#c_state{cb_state = CB1});
+         {stop, Reason, CB3} ->
+            lager:notice("stop message from ~p node with reason ~p",[Module, Reason]),
+            faxe:stop_task(State#c_state.graph_id),
+            {noreply, State#c_state{cb_state = CB3}};
+         {error, _Reason} ->
+            {noreply, State#c_state{cb_state = CB}}
+      end,
    %% node state persistence
    maybe_persist(NewState),
    CR
@@ -598,5 +603,5 @@ outports() ->
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% METRICS %%%%%%%%%%%%%%%%%%%%%%%%%%%
 metric(_Name, _Value, #c_state{flow_node_id = _NId}) ->
-  ok.
+   ok.
 %%   node_metrics:metric(NId, Name, Value).

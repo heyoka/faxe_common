@@ -146,7 +146,7 @@ persist(ComponentIdx, StateData) ->
    %% use the process' dictionary to decide whether we are in persistence mode
    case get(state_persistence) of
       true -> faxe_db:save_node_state(ComponentIdx, StateData);
-      _ -> ok
+      _ -> lager:warning("no persist!"),ok
    end.
 
 %% whether state should be persisted for the calling process (df_component behaviour)
