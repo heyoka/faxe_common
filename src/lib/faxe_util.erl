@@ -23,7 +23,7 @@
    levenshtein/2, build_topic/2, build_topic/1,
    to_bin/1, flip_map/1,
    get_erlang_version/0, get_device_name/0, bytes/1, to_num/1, save_binary_to_atom/1,
-   to_rkey/1, random_latin_binary/2, random_latin_binary/1, type/1]).
+   to_rkey/1, random_latin_binary/2, random_latin_binary/1, type/1, to_list/1]).
 
 -define(HTTP_PROTOCOL, <<"http://">>).
 
@@ -195,6 +195,14 @@ to_bin(E) when is_atom(E) -> atom_to_binary(E, utf8);
 to_bin(Int) when is_integer(Int) -> integer_to_binary(Int);
 to_bin(Float) when is_float(Float) -> float_to_binary(Float);
 to_bin(Bin) -> Bin.
+
+-spec to_list(L :: any()) -> list()|any().
+to_list(L) when is_list(L) -> L;
+to_list(Bin) when is_binary(Bin) -> binary_to_list(Bin);
+to_list(Int) when is_integer(Int) -> integer_to_list(Int);
+to_list(Float) when is_float(Float) -> float_to_list(Float);
+to_list(Atom) when is_atom(Atom) -> atom_to_list(Atom);
+to_list(E) -> E.
 
 -spec to_num(any()) -> number()|term().
 to_num(I) when is_binary(I) orelse is_list(I) ->
