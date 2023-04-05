@@ -23,7 +23,7 @@
    levenshtein/2, build_topic/2, build_topic/1,
    to_bin/1, flip_map/1,
    get_erlang_version/0, get_device_name/0, bytes/1, to_num/1, save_binary_to_atom/1,
-   to_rkey/1, random_latin_binary/2, random_latin_binary/1, type/1]).
+   to_rkey/1, random_latin_binary/2, random_latin_binary/1, type/1, to_list/1]).
 
 -define(HTTP_PROTOCOL, <<"http://">>).
 
@@ -124,10 +124,10 @@ bytes_from_words(Words) ->
 local_ip_v4() ->
    {ok, Addrs} = inet:getifaddrs(),
    A =
-   [
-      Addr || {_, Opts} <- Addrs, {addr, Addr} <- Opts,
-      size(Addr) == 4, Addr =/= {127,0,0,1}
-   ],
+      [
+         Addr || {_, Opts} <- Addrs, {addr, Addr} <- Opts,
+         size(Addr) == 4, Addr =/= {127,0,0,1}
+      ],
    case A of
       [] -> {127,0,0,1};
       [Ip|_] -> Ip
@@ -196,6 +196,14 @@ to_bin(Int) when is_integer(Int) -> integer_to_binary(Int);
 to_bin(Float) when is_float(Float) -> float_to_binary(Float);
 to_bin(Bin) -> Bin.
 
+-spec to_list(L :: any()) -> list()|any().
+to_list(L) when is_list(L) -> L;
+to_list(Bin) when is_binary(Bin) -> binary_to_list(Bin);
+to_list(Int) when is_integer(Int) -> integer_to_list(Int);
+to_list(Float) when is_float(Float) -> float_to_list(Float);
+to_list(Atom) when is_atom(Atom) -> atom_to_list(Atom);
+to_list(E) -> E.
+
 -spec to_num(any()) -> number()|term().
 to_num(I) when is_binary(I) orelse is_list(I) ->
    case string_to_number(I) of
@@ -228,7 +236,7 @@ to_rkey(Bin) when is_binary(Bin) ->
    binary:replace(
       binary:replace(
          Bin, <<"+">>, <<"*">>, [global]),
-            <<"/">>,<<".">>,[global]
+      <<"/">>,<<".">>,[global]
    );
 to_rkey(List) when is_list(List) ->
    [to_rkey(E) || E <- List];
@@ -319,7 +327,7 @@ type(_) -> <<"unknown">>.
 
 decimal_part_test() ->
    ?assertEqual(
-     232,
+      232,
       decimal_part(59.232, 3)
    ).
 decimal_part_2_test() ->
@@ -354,7 +362,7 @@ round_float_3_test() ->
    ).
 prefix_binary_test() ->
    ?assertEqual(
-     <<"myprefix">>,
+      <<"myprefix">>,
       prefix_binary(<<"prefix">>, <<"my">>)
    ).
 
