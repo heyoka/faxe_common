@@ -331,7 +331,7 @@ handle_cast(_Request, State) ->
 handle_info({start, Inputs, FlowMode},
     State=#c_state{component = CB, cb_state = CBState, node_index = NodeIndex}) ->
 
-   lager:info("component ~p starts with options; ~p and inputs: ~p", [CB, CBState, Inputs]),
+%%   lager:info("component ~p starts with options; ~p and inputs: ~p", [CB, CBState, Inputs]),
    Opts = CBState,
 
    %% stop flow on idle feature
@@ -366,7 +366,7 @@ handle_info({start, Inputs, FlowMode},
 handle_info(check_stop_on_idle, State = #c_state{idle_since = Since, idle_check_interval = Interval,
       idle_time = IdleFor}) ->
    IdleTime = (faxe_time:now()-Since),
-   lager:notice("~p idle for ~p secs",[State#c_state.flow_node_id, round(IdleTime/1000)]),
+%%   lager:notice("~p idle for ~p secs",[State#c_state.flow_node_id, round(IdleTime/1000)]),
    case IdleTime >= IdleFor of
       true ->
          %% I think we do not have to check for message queue length of the process, because, if there were
@@ -374,7 +374,7 @@ handle_info(check_stop_on_idle, State = #c_state{idle_since = Since, idle_check_
          %% (check for any buffer in a node also)
          %% maybe provide a callback (ie: is_idle()) for the module to make sure we really are idle, basically asking:
          %% "is there any hidden work still to be done ?"
-         lager:alert("IDLE TIMEOUT !!!"),
+         lager:notice("IDLE TIMEOUT !!!"),
          faxe:stop_task(State#c_state.graph_id, true);
       false ->
          erlang:send_after(Interval, self(), check_stop_on_idle)
@@ -523,7 +523,7 @@ setup_idle_stop(State, #{'_stop_idle' := StopIdle, '_idle_time' := IdleTime0}) -
       false -> ok
    end,
 
-   lager:notice("stop on idle: ~p time: ~p interval: ~p",[StopIdle, IdleTime, IdleCheckInterval]),
+%%   lager:notice("stop on idle: ~p time: ~p interval: ~p",[StopIdle, IdleTime, IdleCheckInterval]),
    State#c_state{
       %% stop_flow_on_idle feature
       stop_on_idle = StopIdle,
