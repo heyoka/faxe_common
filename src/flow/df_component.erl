@@ -24,6 +24,9 @@
 
 -define(MSG_Q_LENGTH_HIGH_WATERMARK, 15).
 
+-define(MIN_IDLE_TIME, 30000).
+-define(MIN_IDLE_CHECK_INTERVAL, 10000).
+
 -type auto_request()    :: 'all' | 'emit' | 'none'.
 -type item_type()       :: nil | batch | point | both.
 
@@ -197,9 +200,14 @@ handle_info/2, handle_ack/3, shutdown/1]).
 %%%===================================================================
 
 add_options() ->
-   [{'_name', string, <<"">>}].
+   add_options(<<"">>).
+
 add_options(Default) ->
-   [{'_name', string, Default}].
+   [
+      {'_name', string, Default},
+      {'_stop_idle', boolean, false},
+      {'_idle_time', duration, <<"5m">>}
+   ].
 
 -spec(start_link(atom(), term(), term(), list(), list(), term()) ->
    {ok, Pid :: pid()} | ignore | {error, Reason :: term()}).
@@ -260,12 +268,16 @@ init([Component, GraphId, NodeId, Inports, _Outports, Args]) ->
 init(#c_state{} = PersistedState) ->
    {ok, PersistedState}.
 
-
+%% sync start
 handle_call({start, Inputs, FlowMode}, _From,
     State=#c_state{component = CB, cb_state = CBState, node_index = NodeIndex}) ->
 
    lager:debug("component ~p starts with options; ~p", [CB, CBState]),
    Opts = CBState,
+
+   %% idle_stop feature
+   NewState = setup_idle_stop(State, Opts),
+
    Inited = CB:init(NodeIndex, Inputs, Opts),
    {AReq, NewCBState} =
       case Inited of
@@ -283,7 +295,7 @@ handle_call({start, Inputs, FlowMode}, _From,
 %%   folsom_metrics:new_histogram(NId, slide, 60),
 %%   folsom_metrics:new_history(<< NId/binary, ?FOLSOM_ERROR_HISTORY >>, 24),
    {reply, ok,
-      State#c_state{
+      NewState#c_state{
          inports = Inputs,
          auto_request = AR,
          cb_state = NewCBState,
@@ -305,18 +317,26 @@ handle_cast(_Request, State) ->
 
 
 %% @doc
-%% start the node asynchronously
+%% handle_info/2
 %% these are the messages from and to other dataflow nodes
 %% do not use these tags in your callback 'handle_info' functions :
 %% 'start' | 'request' | 'item' | 'emit' | 'pull' | 'stop'
 %% you will not receive the info message in the callback with these
 %%
+
+
+%% @doc
+%% start the node asynchronously
 %% @end
 handle_info({start, Inputs, FlowMode},
     State=#c_state{component = CB, cb_state = CBState, node_index = NodeIndex}) ->
 
-%%   lager:info("component ~p starts with options; ~p and inputs: ~p", [CB, CBState, Inputs]),
+   lager:info("component ~p starts with options; ~p and inputs: ~p", [CB, CBState, Inputs]),
    Opts = CBState,
+
+   %% stop flow on idle feature
+   NewState = setup_idle_stop(State, Opts),
+
    Inited = CB:init(NodeIndex, Inputs, Opts),
    {AReq, NewCBState} =
       case Inited of
@@ -332,7 +352,7 @@ handle_info({start, Inputs, FlowMode},
    CallbackHandlesAck = erlang:function_exported(CB, handle_ack, 3),
 
    {noreply,
-      State#c_state{
+      NewState#c_state{
          inports = Inputs,
          auto_request = AR,
          cb_state = NewCBState,
@@ -343,6 +363,25 @@ handle_info({start, Inputs, FlowMode},
       }
    }
 ;
+handle_info(check_stop_on_idle, State = #c_state{idle_since = Since, idle_check_interval = Interval,
+      idle_time = IdleFor}) ->
+   IdleTime = (faxe_time:now()-Since),
+   lager:notice("~p idle for ~p secs",[State#c_state.flow_node_id, round(IdleTime/1000)]),
+   case IdleTime >= IdleFor of
+      true ->
+         %% I think we do not have to check for message queue length of the process, because, if there were
+         %% messages still, we would see that in the handle_info callbacks
+         %% (check for any buffer in a node also)
+         %% maybe provide a callback (ie: is_idle()) for the module to make sure we really are idle, basically asking:
+         %% "is there any hidden work still to be done ?"
+         lager:alert("IDLE TIMEOUT !!!"),
+         faxe:stop_task(State#c_state.graph_id, true);
+      false ->
+         erlang:send_after(Interval, self(), check_stop_on_idle)
+   end,
+   {noreply, State};
+
+
 %%% DEBUG
 handle_info(start_debug, State = #c_state{}) ->
    NewState = cb_handle_info(start_debug, State),
@@ -364,7 +403,7 @@ handle_info({ack, Mode, DTag} = Req, State = #c_state{inports = Ins}) ->
 handle_info({item, _}, State=#c_state{cb_inited = false}) ->
    %% drop it, we are not yet initialized
    lager:notice("Got Item but callback not yet initialized, item will be dropped!"),
-   {noreply, State};
+   {noreply, reset_idle(State, item_no_init)};
 handle_info({item, {Inport, Value}},
     State=#c_state{
        cb_state = CBState, component = Module, flow_mode = FMode, auto_request = AR}) ->
@@ -394,7 +433,7 @@ handle_info({item, {Inport, Value}},
                     end;
             false -> ok
          end,
-         {noreply, NewState}
+         {noreply, reset_idle(NewState, item)}
    end
 ;
 %% EMITTING ITEM
@@ -405,7 +444,7 @@ handle_info({emit, {Outport, Value}}, State=#c_state{node_id = _NId,
       none  -> ok;
       _     -> request_all(State#c_state.inports, FMode)
    end,
-   {noreply, State#c_state{emitted = EmitCount+1}};
+   {noreply, reset_idle(State#c_state{emitted = EmitCount+1}, emit)};
 
 handle_info(pull, State=#c_state{inports = Ins}) ->
    lists:foreach(fun({Port, Pid}) -> dataflow:request_items(Port, [Pid]) end, Ins),
@@ -430,7 +469,7 @@ handle_info(Req, State = #c_state{component = Module, cb_state = CB, cb_handle_i
          handle_info({emit, {1, Data}}, State#c_state{cb_state = CB1});
       {stop, Reason, CB3} ->
          lager:notice("stop message from ~p node with reason ~p",[Module, Reason]),
-         faxe:stop_task(State#c_state.graph_id),
+         faxe:stop_task(State#c_state.graph_id, true),
          {noreply, State#c_state{cb_state = CB3}};
       {error, _Reason} ->
          {noreply, State#c_state{cb_state = CB}}
@@ -475,6 +514,24 @@ code_change(_OldVsn, State, _Extra) ->
 %%%===================================================================
 %%% Internal functions
 %%%===================================================================
+setup_idle_stop(State, #{'_stop_idle' := StopIdle, '_idle_time' := IdleTime0}) ->
+   %% stop flow on idle feature
+   IdleTime = max(faxe_time:duration_to_ms(IdleTime0), ?MIN_IDLE_TIME),
+   IdleCheckInterval = max(round(IdleTime/3), ?MIN_IDLE_CHECK_INTERVAL),
+   case StopIdle of
+      true -> erlang:send_after(IdleCheckInterval, self(), check_stop_on_idle);
+      false -> ok
+   end,
+
+   lager:notice("stop on idle: ~p time: ~p interval: ~p",[StopIdle, IdleTime, IdleCheckInterval]),
+   State#c_state{
+      %% stop_flow_on_idle feature
+      stop_on_idle = StopIdle,
+      idle_time = IdleTime,
+      idle_check_interval = IdleCheckInterval,
+      idle_since = faxe_time:now()
+   }.
+
 
 -spec handle_process_result(tuple(), #c_state{}) -> {NewState::#c_state{}, boolean(), boolean()}.
 handle_process_result({emit, Emitting, NState}, State=#c_state{}) when is_list(Emitting) ->
@@ -537,7 +594,9 @@ maybe_request_items(_Port, _Pids, push) ->
 maybe_request_items(Port, Pids, pull) ->
    dataflow:request_items(Port, Pids).
 
-
+reset_idle(State, Tag) ->
+%%   lager:info("reset idle time <~p>",[Tag]),
+   State#c_state{idle_since = faxe_time:now()}.
 %%%===================================================================
 %%% PORTS for modules
 %%%
