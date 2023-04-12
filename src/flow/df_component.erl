@@ -25,7 +25,7 @@
 -define(MSG_Q_LENGTH_HIGH_WATERMARK, 15).
 
 -define(MIN_IDLE_TIME, 30000).
--define(MIN_IDLE_CHECK_INTERVAL, 10000).
+-define(MIN_IDLE_CHECK_INTERVAL, 15000).
 
 -type auto_request()    :: 'all' | 'emit' | 'none'.
 -type item_type()       :: nil | batch | point | both.
@@ -517,7 +517,7 @@ code_change(_OldVsn, State, _Extra) ->
 setup_idle_stop(State, #{'_stop_idle' := StopIdle, '_idle_time' := IdleTime0}) ->
    %% stop flow on idle feature
    IdleTime = max(faxe_time:duration_to_ms(IdleTime0), ?MIN_IDLE_TIME),
-   IdleCheckInterval = max(round(IdleTime/3), ?MIN_IDLE_CHECK_INTERVAL),
+   IdleCheckInterval = max(round(IdleTime/5), ?MIN_IDLE_CHECK_INTERVAL),
    case StopIdle of
       true -> erlang:send_after(IdleCheckInterval, self(), check_stop_on_idle);
       false -> ok
