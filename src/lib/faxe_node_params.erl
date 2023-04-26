@@ -42,6 +42,7 @@ options(<<"group_by">>) -> [{all, <<"fields">>, string_list}];
 options(<<"json_emitter">>) -> [{all, <<"json">>, string_list}];
 options(<<"amqp_consume">>) -> [{1, <<"qx_name">>, string}];
 options(<<"if">>) -> [{1, <<"test">>, lambda}];
+options(<<"collect_fields">>) -> [{all, <<"fields">>, string_list}];
 options(_) -> undefined.
 
 %% helper functions

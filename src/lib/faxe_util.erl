@@ -22,8 +22,11 @@
    ip_to_bin/1, device_name/0, proplists_merge/2,
    levenshtein/2, build_topic/2, build_topic/1,
    to_bin/1, flip_map/1,
-   get_erlang_version/0, get_device_name/0, bytes/1, to_num/1, save_binary_to_atom/1,
-   to_rkey/1, random_latin_binary/2, random_latin_binary/1, type/1, to_list/1]).
+   get_erlang_version/0, get_device_name/0,
+   bytes/1, to_num/1, save_binary_to_atom/1,
+   to_rkey/1, random_latin_binary/2, random_latin_binary/1,
+   type/1, to_list/1,
+   check_mqtt_topic/1, check_publisher_mqtt_topic/1]).
 
 -define(HTTP_PROTOCOL, <<"http://">>).
 
@@ -188,6 +191,30 @@ build_topic(Parts, Separator) when is_list(Parts) andalso is_binary(Separator) -
          ), Separator, <<>>)
       || P <- PartsBin, P /= Separator],
    iolist_to_binary(lists:join(Separator, PartsClean)).
+
+
+-spec check_mqtt_topic(binary()) -> true | {false, binary()}.
+check_mqtt_topic(<<"/", _R/binary>>) ->
+   {false, <<"topic must not start with '/'">>};
+check_mqtt_topic(<<"$", _R/binary>>) ->
+   {false, <<"topic must not start with '$'">>};
+check_mqtt_topic(T) when is_binary(T) ->
+   case estr:str_ends_with(T, <<"/">>) of
+      true -> {false, <<"topic must not end with '/'">>};
+      false -> true
+   end.
+
+-spec check_publisher_mqtt_topic(binary()) -> true | {false, binary()}.
+check_publisher_mqtt_topic(T) when is_binary(T) ->
+   case check_mqtt_topic(T) of
+      true ->
+         case binary:match(T, [<<"#">>, <<"+">>]) of
+            nomatch -> true;
+            _ -> {false, <<"topic must not contain '#' or '+'">>}
+         end;
+      O -> O
+   end.
+
 
 -spec to_bin(any()) -> binary().
 to_bin(L) when is_list(L) -> list_to_binary(L);
@@ -449,6 +476,48 @@ to_rkey_list_test() ->
    Topics = [<<"root/some/ttopic/here/v2">>, <<"root/some/+/here/+/v1/#">>, <<"root/some/+/here/#">>],
    Expected = [<<"root.some.ttopic.here.v2">>, <<"root.some.*.here.*.v1.#">>, <<"root.some.*.here.#">>],
    ?assertEqual(Expected, to_rkey(Topics)).
+
+
+check_topic_start_test() ->
+   T = <<"/root/some/ttopic/here/v2">>,
+   Expected = {false, <<"topic must not start with '/'">>},
+   ?assertEqual(Expected, check_mqtt_topic(T)).
+
+check_topic_end_test() ->
+   T = <<"root/some/ttopic/here/v2/">>,
+   Expected = {false, <<"topic must not end with '/'">>},
+   ?assertEqual(Expected, check_mqtt_topic(T)).
+
+check_topic_ok_test() ->
+   T = <<"root/some/a/+/sdf/2342/ttopic/here/#">>,
+   Expected = true,
+   ?assertEqual(Expected, check_mqtt_topic(T)).
+
+check_topic_start_dollar_test() ->
+   T = <<"$SYS/root/some/ttopic/here/v2">>,
+   Expected = {false, <<"topic must not start with '$'">>},
+   ?assertEqual(Expected, check_mqtt_topic(T)).
+
+check_topic_pub_start_test() ->
+   T = <<"$SYS/root/some/ttopic/here/v2">>,
+   Expected = {false, <<"topic must not start with '$'">>},
+   ?assertEqual(Expected, check_publisher_mqtt_topic(T)).
+
+check_topic_pub_wildcard1_test() ->
+   T = <<"root/some/ttopic/here/v2/#">>,
+   Expected = {false, <<"topic must not contain '#' or '+'">>},
+   ?assertEqual(Expected, check_publisher_mqtt_topic(T)).
+
+check_topic_pub_wildcard2_test() ->
+   T = <<"root/some/ttopic/+/v2">>,
+   Expected = {false, <<"topic must not contain '#' or '+'">>},
+   ?assertEqual(Expected, check_publisher_mqtt_topic(T)).
+
+check_topic_pub_ok_test() ->
+   T = <<"root/some/ttopic/troll/lol/v2">>,
+   Expected = true,
+   ?assertEqual(Expected, check_publisher_mqtt_topic(T)).
+
 
 -endif.
 

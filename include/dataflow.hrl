@@ -39,7 +39,13 @@
    auto_request         :: none | all | emit,
    auto_persist = false :: true | false,
    emitted = 0          :: non_neg_integer(),
-   emit_debug = false   :: true | false
+   emit_debug = false   :: true | false,
+
+   %% stop_flow_on_idle feature
+   stop_on_idle = false :: true | false,
+   idle_time = <<"5m">> :: non_neg_integer(),
+   idle_check_interval  :: non_neg_integer(),
+   idle_since           :: non_neg_integer()
 }).
 
 -record(data_point, {
