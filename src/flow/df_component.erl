@@ -201,7 +201,7 @@
 %% these are optional (%% erlang 18+)
 -optional_callbacks([
 options/0, check_options/0, wants/0, emits/0,
-inports/0, outports/0,
+inports/0, outports/0, init/4,
 handle_info/2, handle_ack/3, shutdown/1]).
 
 
@@ -364,7 +364,7 @@ handle_info({start, Inputs, #task_modes{run_mode = FlowMode, state_persistence =
    %% stop flow on idle feature
    NewState = setup_idle_stop(State, Opts),
 
-   Inited = CB:init(NodeIndex, Inputs, Opts),
+%%   Inited = CB:init(NodeIndex, Inputs, Opts),
    {AReq, NewCBState} =
       case Inited of
 
