@@ -34,6 +34,7 @@
    cb_state             :: cbstate(), %% state for callback
    cb_handle_info       :: true | false,
    cb_handle_ack        :: true | false,
+   cb_formats_state     :: true | false,
    cb_inited = false    :: true | false,
    inports              :: list(), %% list of inputs {port, pid}
    auto_request         :: none | all | emit,

@@ -144,6 +144,7 @@
 -callback wants() -> item_type().
 -callback emits() -> item_type().
 
+
 %% @doc
 %% INPORTS/0
 %%
@@ -198,10 +199,20 @@
 -callback shutdown(State :: cbstate())
        -> any().
 
+
+%% @doc
+%% format the state, used when auto persistence is active for a node
+%% (it is not the same thing as format_status/1 for gen_server callbacks)
+%% if this callback is not exported and auto persistence is active,
+%% then the complete callback state is used (persisted)
+%% optional
+%% @end
+-callback format_state(State :: cbstate()) -> term().
+
 %% these are optional (%% erlang 18+)
 -optional_callbacks([
 options/0, check_options/0, wants/0, emits/0,
-inports/0, outports/0, init/4,
+inports/0, outports/0, init/4, format_state/1,
 handle_info/2, handle_ack/3, shutdown/1]).
 
 
@@ -309,6 +320,7 @@ handle_call({start, Inputs, #task_modes{run_mode = FlowMode, state_persistence =
    AR = case FlowMode of pull -> AReq; push -> none end,
    CallbackHandlesInfo = erlang:function_exported(CB, handle_info, 2),
    CallbackHandlesAck = erlang:function_exported(CB, handle_ack, 3),
+   CallbackFormatsState = erlang:function_exported(CB, format_state, 1),
    %% metrics
 %%   folsom_metrics:new_histogram(NId, slide, 60),
 %%   folsom_metrics:new_history(<< NId/binary, ?FOLSOM_ERROR_HISTORY >>, 24),
@@ -320,7 +332,8 @@ handle_call({start, Inputs, #task_modes{run_mode = FlowMode, state_persistence =
          cb_inited = true,
          flow_mode = FlowMode,
          cb_handle_info = CallbackHandlesInfo,
-         cb_handle_ack = CallbackHandlesAck}
+         cb_handle_ack = CallbackHandlesAck,
+         cb_formats_state = CallbackFormatsState}
    };
 handle_call(get_subscribers, _From, State=#c_state{node_index = NodeIndex}) ->
    {reply, {ok, df_subscription:subscriptions(NodeIndex)}, State}
@@ -379,6 +392,7 @@ handle_info({start, Inputs, #task_modes{run_mode = FlowMode, state_persistence =
 %%   AR = case FlowMode of pull -> AReq; push -> none end,
    CallbackHandlesInfo = erlang:function_exported(CB, handle_info, 2),
    CallbackHandlesAck = erlang:function_exported(CB, handle_ack, 3),
+   CallbackFormatsState = erlang:function_exported(CB, format_state, 1),
 
    {noreply,
       NewState#c_state{
@@ -389,7 +403,8 @@ handle_info({start, Inputs, #task_modes{run_mode = FlowMode, state_persistence =
          cb_inited = true,
          flow_mode = FlowMode,
          cb_handle_info = CallbackHandlesInfo,
-         cb_handle_ack = CallbackHandlesAck
+         cb_handle_ack = CallbackHandlesAck,
+         cb_formats_state = CallbackFormatsState
       }
    }
 ;
@@ -646,6 +661,9 @@ maybe_request_items(Port, Pids, pull) ->
 
 maybe_persist(#c_state{auto_persist = false}) ->
    ok;
+maybe_persist(#c_state{cb_state = CBState, node_index = FNId, cb_formats_state = true, component = CB}) ->
+   PState = CB:format_state(CBState),
+   dataflow:persist(FNId, PState);
 maybe_persist(#c_state{cb_state = CBState, node_index = FNId}) ->
    dataflow:persist(FNId, CBState).
 
