@@ -269,4 +269,22 @@ str_repeat_replace_fails_test() ->
     faxe_lambda_lib:str_repeat_replace(<<"{\"stream_id\": \"#sid\", \"value#sid\": 14}">>, <<"#sid">>, <<"1">>)
   ).
 
+
+%%% ENVs
+get_env_test() ->
+  Val = "prod",
+  Key = "FLL_TEST_1",
+  os:putenv("FLL_TEST_1", Val),
+  ValExpected = list_to_binary(Val),
+  KeyUsed = list_to_binary(Key),
+  ?assertEqual(faxe_lambda_lib:env(KeyUsed), ValExpected).
+
+get_env_default_test() ->
+  Key = <<"FLL_TEST_2">>,
+  ?assertEqual(faxe_lambda_lib:env(Key, 333), 333).
+
+get_env_fails_test() ->
+  Key = 14.22,
+  ?assertThrow("env/1/2 expects a string variable name!", faxe_lambda_lib:env(Key)).
+
 -endif.

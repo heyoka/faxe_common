@@ -250,6 +250,25 @@ modulo(X, Y) ->
    mod(X, Y).
 mod(X, Y) ->
    faxe_time:mod(X, Y).
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Other (misc) functions
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+env(VarName) ->
+   env(VarName, false).
+
+-spec env(VarName :: binary(), DefaultValue::any()) -> any().
+env(VarName, DefaultValue) when is_binary(VarName) ->
+   case os:getenv(binary_to_list(VarName), DefaultValue) of
+      Val when is_list(Val) -> list_to_binary(Val);
+      Other -> Other
+   end;
+env(_, _) ->
+   throw("env/1/2 expects a string variable name!").
+
+
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Time related functions
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
