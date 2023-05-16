@@ -261,11 +261,18 @@ env(VarName) ->
 -spec env(VarName :: binary(), DefaultValue::any()) -> any().
 env(VarName, DefaultValue) when is_binary(VarName) ->
    case os:getenv(binary_to_list(VarName), DefaultValue) of
-      Val when is_list(Val) -> list_to_binary(Val);
+      Val when is_list(Val) ->
+         %% faxe strings are binaries, so we have to convert
+         list_to_binary(Val);
       Other -> Other
    end;
 env(_, _) ->
    throw("env/1/2 expects a string variable name!").
+
+%% get a map of all OS environment VARs where keys and values are converted to binary
+envs() ->
+   lists:foldl(fun({K, V}, AccMap) -> AccMap#{list_to_binary(K) => list_to_binary(V)} end,
+      #{}, os:env()).
 
 
 
