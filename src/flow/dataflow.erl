@@ -12,17 +12,6 @@
    add_edge/2
 ]).
 
--export([
-   add_metrics_handler/0,
-   add_metrics_handler/1,
-   add_metrics_handler/3,
-   add_conn_status_handler/0,
-   add_conn_status_handler/1,
-   add_conn_status_handler/3,
-   add_trace_handler/0,
-   add_trace_handler/1,
-   add_trace_handler/3,
-   add_flowchanged_handler/3]).
 
 -export([
    request_items/2,
@@ -35,34 +24,6 @@
 %%====================================================================
 %% CALLBACK API functions
 %%====================================================================
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-add_metrics_handler() ->
-   add_metrics_handler(node_metrics_handler).
-add_metrics_handler(Name) when is_atom(Name) ->
-   add_metrics_handler(Name, event_handler_mqtt, []).
-add_metrics_handler(Name, Type, Args) when is_atom(Name) ->
-   ok = gen_event:add_handler(faxe_metrics, Type, [Name, Args]).
-
-add_conn_status_handler() ->
-   add_conn_status_handler(node_metrics_handler).
-add_conn_status_handler(Name) when is_atom(Name) ->
-   add_conn_status_handler(Name, event_handler_mqtt, []).
-add_conn_status_handler(Name, Type, Args) when is_atom(Name) ->
-   ok = gen_event:add_handler(conn_status, Type, [Name, Args]).
-
-add_trace_handler() ->
-   add_trace_handler(debug_handler).
-add_trace_handler(Name) when is_atom(Name) ->
-   add_trace_handler(Name, event_handler_mqtt, []).
-add_trace_handler(Name, Type, Args) ->
-   ok = gen_event:add_handler(faxe_debug, Type, [Name, Args]).
-
-add_flowchanged_handler(Name, Type, Args) ->
-   ok = gen_event:add_handler(flow_changed, Type, [Name, Args]).
-
 
 %% @doc get a new graph definition map
 -spec new_graph() -> graph_definition().
