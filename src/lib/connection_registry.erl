@@ -8,14 +8,13 @@
 
 -behaviour(gen_server).
 
--export([start_link/0, connected/0, disconnected/0, connecting/0, reg/4]).
+-export([start_link/0, connected/0, disconnected/0, connecting/0, reg/4, get_connection/1, get_connection_msgs/1]).
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2, terminate/2,
   code_change/3]).
 
 -include("faxe_common.hrl").
 
 -define(SERVER, ?MODULE).
--define(DATA_FORMAT, <<"0092.0003">>).
 %%
 %% status: 0 = disconnected, 1 = connected, 2 = connecting
 -record(conreg, {
@@ -70,8 +69,7 @@ handle_info({reg, Client, {FlowId, NodeId} = _Id, Peer, Port, Type} = _R, State=
     true -> list_to_binary(Peer);
     false -> Peer
   end,
-  ets:insert(node_connections,
-    {Client, #conreg{peer = Peer1, port = Port, flowid = FlowId, nodeid = NodeId, conn_type = Type}}),
+  write(Client, #conreg{peer = Peer1, port = Port, flowid = FlowId, nodeid = NodeId, conn_type = Type}),
   {noreply, State#state{clients = [Client|Clients]}};
 handle_info({connecting, Client} = _R, State) ->
   Con = get_connection(Client),
@@ -125,12 +123,25 @@ code_change(_OldVsn, State = #state{}, _Extra) ->
 
 -spec get_connection(pid()) -> #conreg{}.
 get_connection(Pid) ->
+  get_connection(Pid, false).
+
+get_connection(Pid, Strict) ->
   case ets:lookup(node_connections, Pid) of
     [{Pid, #conreg{}=C}] ->
       C;
     _ -> %% Client not found !!!
-      #conreg{connected = false}
+      case Strict of
+        true -> undefined;
+        false -> #conreg{connected = false}
+      end
   end.
+
+%% get connection messages for a list of graph node pids
+get_connection_msgs(Pids) when is_list(Pids) ->
+  Conns0 = [get_connection(Pid, true) || Pid <- Pids],
+  Conns = [C || C <- Conns0, C /= undefined],
+  [build_datapoint(Conn) || Conn=#conreg{flowid = FId, nodeid = NId} <- Conns].
+
 
 remove_node_entries(Pid) ->
   ets:match_delete(node_connections, {Pid, '_'}).
@@ -144,7 +155,11 @@ out(Client, Con=#conreg{}) ->
 write(Client, Con=#conreg{}) ->
   ets:insert(node_connections, {Client, Con}).
 
-publish(#conreg{connected = Connected, status = Status, flowid = FId,
+publish(Conn = #conreg{flowid = FId, nodeid = NId}) ->
+  P = build_datapoint(Conn),
+  catch gen_event:notify(conn_status, {{FId, NId}, P}).
+
+build_datapoint(#conreg{connected = Connected, status = Status, flowid = FId,
   nodeid = NId, peer = Peer, port = Port, conn_type = Type}) ->
   Fields = #{
     <<"connected">> => Connected,
@@ -153,8 +168,6 @@ publish(#conreg{connected = Connected, status = Status, flowid = FId,
     <<"node_id">> => NId,
     <<"peer">> => Peer,
     <<"port">> => Port,
-    <<"conn_type">> => Type,
-    <<"df">> => ?DATA_FORMAT
+    <<"conn_type">> => Type
   },
-  P = #data_point{ts = faxe_time:now(), fields = Fields}, 
-  catch gen_event:notify(conn_status, {{FId, NId}, P}).
+  #data_point{ts = faxe_time:now(), fields = Fields}.
