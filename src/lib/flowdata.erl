@@ -80,7 +80,7 @@
    ts/2,
    merge/1,
    set_dtag/2,
-   to_num/1, to_num/2, with/2, fields/3]).
+   to_num/1, to_num/2, with/2, fields/3, tss_fields/3]).
 
 -define(DEFAULT_FIELDS, [<<"id">>, <<"df">>, <<"ts">>]).
 -define(DEFAULT_TS_FIELD, <<"ts">>).
@@ -313,8 +313,26 @@ with(#data_batch{points = Points} = B, PathList) when is_list(PathList) ->
    B#data_batch{points = NewPoints}.
 
 %% get the timestamps and fieldvalues  as {TsList, ValList} from a data_batch, where undefineds are not included
--spec tss_fields(#data_batch{}, binary()|tuple()) -> {list(), list()}.
-tss_fields(#data_batch{points = Points}, Path) ->
+-spec tss_fields(#data_batch{}, binary()|tuple(), IsRootPath :: true|false) -> {list(), list()}.
+tss_fields(B=#data_batch{}, Paths) when is_list(Paths) ->
+   tss_fields(B, Paths, false);
+tss_fields(B=#data_batch{}, Path) ->
+   tss_fields(B, Path, false).
+tss_fields(B=#data_batch{}, Paths, true) when is_list(Paths) ->
+   [tss_fields(B, F, true) || F <- Paths];
+tss_fields(#data_batch{points = Points}, Path, true) ->
+   lists:foldl(
+     fun
+        (#data_point{ts = Ts, fields = #{Path := Val}}, {Tss, Vals}) ->
+           {Tss++[Ts], Vals++[Val]};
+        (_, Acc) -> Acc
+     end,
+      {[],[]},
+      Points
+   );
+tss_fields(B=#data_batch{}, Paths, false) when is_list(Paths) ->
+   [tss_fields(B, F, false) || F <- Paths];
+tss_fields(#data_batch{points = Points}, Path, false) ->
    lists:foldl(
       fun(Point=#data_point{ts=Ts}, {Tss, Vals} =Acc) ->
          case field(Point, Path) of
@@ -325,6 +343,7 @@ tss_fields(#data_batch{points = Points}, Path) ->
       {[], []},
       Points
    ).
+
 
 
 %% @doc
