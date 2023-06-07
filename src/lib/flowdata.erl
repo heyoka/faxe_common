@@ -323,17 +323,17 @@ tss_fields(B=#data_batch{}, Path) ->
    tss_fields(B, Path, false).
 tss_fields(B=#data_batch{}, Paths, true) when is_list(Paths) ->
    [tss_fields(B, F, true) || F <- Paths];
-%%tss_fields(#data_batch{points = Points}, Path, true) ->
-%%   lists:foldl(
-%%     fun
-%%        (#data_point{ts = Ts, fields = F=#{Path := Val}}, {Tss, Vals}) ->
-%%           {Tss++[Ts], Vals++[Val]};
-%%        (_, Acc) ->
-%%           Acc
-%%     end,
-%%      {[],[]},
-%%      Points
-%%   );
+tss_fields(#data_batch{points = Points}, Path, true) ->
+   lists:foldl(
+     fun
+        (#data_point{ts = Ts, fields = F=#{Path := Val}}, {Tss, Vals}) ->
+           {Tss++[Ts], Vals++[Val]};
+        (_, Acc) ->
+           Acc
+     end,
+      {[],[]},
+      Points
+   );
 tss_fields(B=#data_batch{}, Paths, false) when is_list(Paths) ->
    [tss_fields(B, F, false) || F <- Paths];
 tss_fields(#data_batch{points = Points}, Path, false) ->
@@ -716,7 +716,7 @@ convert_path(Path) ->
       nomatch -> Path;
       _Match ->
          Split0 = binary:split(Path, [<<".">>], [global, trim_all]),
-         Split = [binary:replace(BinPart, ?DOT_ESCAPE, <<".">>) || BinPart <- Split0],
+         Split = [binary:replace(BinPart, ?DOT_ESCAPE, <<".">>, [global]) || BinPart <- Split0],
          PathList =
             lists:foldl(
                fun(E, List) ->
