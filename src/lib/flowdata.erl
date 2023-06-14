@@ -80,10 +80,13 @@
    ts/2,
    merge/1,
    set_dtag/2,
-   to_num/1, to_num/2, with/2, fields/3]).
+   to_num/1, to_num/2, with/2, fields/3, tss_fields/3]).
+-export([convert_path/1]).
 
 -define(DEFAULT_FIELDS, [<<"id">>, <<"df">>, <<"ts">>]).
 -define(DEFAULT_TS_FIELD, <<"ts">>).
+
+-define(DOT_ESCAPE, <<"*">>).
 
 
 -spec to_json(#data_point{} | #data_batch{}) -> binary().
@@ -313,8 +316,27 @@ with(#data_batch{points = Points} = B, PathList) when is_list(PathList) ->
    B#data_batch{points = NewPoints}.
 
 %% get the timestamps and fieldvalues  as {TsList, ValList} from a data_batch, where undefineds are not included
--spec tss_fields(#data_batch{}, binary()|tuple()) -> {list(), list()}.
-tss_fields(#data_batch{points = Points}, Path) ->
+-spec tss_fields(#data_batch{}, binary()|tuple(), IsRootPath :: true|false) -> {list(), list()}.
+tss_fields(B=#data_batch{}, Paths) when is_list(Paths) ->
+   tss_fields(B, Paths, false);
+tss_fields(B=#data_batch{}, Path) ->
+   tss_fields(B, Path, false).
+tss_fields(B=#data_batch{}, Paths, true) when is_list(Paths) ->
+   [tss_fields(B, F, true) || F <- Paths];
+tss_fields(#data_batch{points = Points}, Path, true) ->
+   lists:foldl(
+     fun
+        (#data_point{ts = Ts, fields = F=#{Path := Val}}, {Tss, Vals}) ->
+           {Tss++[Ts], Vals++[Val]};
+        (_, Acc) ->
+           Acc
+     end,
+      {[],[]},
+      Points
+   );
+tss_fields(B=#data_batch{}, Paths, false) when is_list(Paths) ->
+   [tss_fields(B, F, false) || F <- Paths];
+tss_fields(#data_batch{points = Points}, Path, false) ->
    lists:foldl(
       fun(Point=#data_point{ts=Ts}, {Tss, Vals} =Acc) ->
          case field(Point, Path) of
@@ -325,6 +347,7 @@ tss_fields(#data_batch{points = Points}, Path) ->
       {[], []},
       Points
    ).
+
 
 
 %% @doc
@@ -682,16 +705,23 @@ path(Path) when is_tuple(Path) -> Path;
 path(Path) when is_binary(Path) ->
    case ( catch ets:lookup(field_paths, Path)) of
       [{Path, Cached}] -> Cached;
-      [] -> Ret = convert_path(Path), ets:insert(field_paths, {Path, Ret}), Ret;
+      [] ->
+         Ret = convert_path(Path),
+         ets:insert(field_paths, {Path, Ret}), Ret;
       _ -> Ret = convert_path(Path),  Ret
 end.
 
 convert_path(Path) ->
-   case binary:match(Path, <<"[">>) of
+   case binary:match(Path, [<<"[">>, ?DOT_ESCAPE]) of
       nomatch -> Path;
-      _Match -> Split = binary:split(Path, [<<".">>], [global, trim_all]),
+      _Match ->
+         Split0 = binary:split(Path, [<<".">>], [global, trim_all]),
+         Split = [binary:replace(BinPart, ?DOT_ESCAPE, <<".">>, [global]) || BinPart <- Split0],
          PathList =
-            lists:foldl(fun(E, List) -> List ++ extract_array_index(E) end,
+            lists:foldl(
+               fun(E, List) ->
+                  List ++ extract_array_index(E)
+               end,
                [],
                Split),
          list_to_tuple(PathList)

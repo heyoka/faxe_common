@@ -37,6 +37,32 @@ path_test() ->
    Path = <<"this.is.my.paths.id">>,
    ?assertEqual(flowdata:path(Path), Path).
 
+path_dot_1_test() ->
+   Path = <<"this*is.my.paths.id">>,
+   ?assertEqual({<<"this.is">>, <<"my">>, <<"paths">>, <<"id">>}, flowdata:path(Path)).
+
+path_dot_2_test() ->
+   Path = <<"this*is.my.paths.id*more">>,
+   ?assertEqual({<<"this.is">>, <<"my">>, <<"paths">>, <<"id.more">>}, flowdata:path(Path)).
+
+path_dot_array_index_test() ->
+   Path = <<"this*is.my.paths[3].id">>,
+   ?assertEqual({<<"this.is">>, <<"my">>, <<"paths">>, 3, <<"id">>}, flowdata:path(Path)).
+
+path_dot_root_1_test() ->
+   Path = <<"this*is.my.paths[3].id">>,
+   ?assertEqual(false, flowdata:is_root_path(Path)).
+
+path_dot_root_2_test() ->
+   Path = <<"this*is">>,
+   ?assertEqual(true, flowdata:is_root_path(Path)).
+
+path_dot_root_3_test() ->
+   Path = <<"this*is.myid">>,
+   ?assertEqual(false, flowdata:is_root_path(Path)).
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 get_field_value_kv_test() ->
    P = #data_point{ts = 1234567891234, id = <<"324392i09i329i2df4">>, fields = #{<<"val">> => 3}},
    Path = <<"val">>,
@@ -227,6 +253,16 @@ set_field_kv_test() ->
    ?assertEqual(#{<<"val">> => <<"somestring">>,
          <<"var">> => 44, <<"value">> => <<"new">>},
       SetP#data_point.fields).
+
+
+%%set_field_kv_dot_test() ->
+%%   P = #data_point{ts = 1234567891234, id = <<"324392i09i329i2df4">>,
+%%      fields = #{<<"val">> => <<"somestring">>, <<"var">> => 44}},
+%%   Path = <<"value*val">>,
+%%   SetP = set_field(P, Path, <<"new">>),
+%%   ?assertEqual(#{<<"val">> => <<"somestring">>,
+%%      <<"var">> => 44, <<"value.val">> => <<"new">>},
+%%      SetP#data_point.fields).
 
 set_field_deep_test() ->
    P = #data_point{ts = 1234567891234, id = <<"324392i09i329i2df4">>,
