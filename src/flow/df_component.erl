@@ -24,9 +24,6 @@
 
 -define(MSG_Q_LENGTH_HIGH_WATERMARK, 15).
 
--define(MIN_IDLE_TIME, 30000).
--define(MIN_IDLE_CHECK_INTERVAL, 15000).
-
 -type auto_request()    :: 'all' | 'emit' | 'none'.
 -type item_type()       :: nil | batch | point | both.
 
@@ -204,9 +201,10 @@ add_options() ->
 
 add_options(Default) ->
    [
-      {'_name', string, Default},
-      {'_stop_idle', boolean, false},
-      {'_idle_time', duration, <<"5m">>}
+      {'_name',      string,     Default},
+      {'_stop_idle', boolean,    false},
+      {'_idle_time', duration,   <<"5m">>},
+      {'_stop_when', lambda,     undefined}
    ].
 
 -spec(start_link(atom(), term(), term(), list(), list(), term()) ->
@@ -363,25 +361,6 @@ handle_info({start, Inputs, FlowMode},
       }
    }
 ;
-handle_info(check_stop_on_idle, State = #c_state{idle_since = Since, idle_check_interval = Interval,
-      idle_time = IdleFor}) ->
-   IdleTime = (faxe_time:now()-Since),
-%%   lager:notice("~p idle for ~p secs",[State#c_state.flow_node_id, round(IdleTime/1000)]),
-   case IdleTime >= IdleFor of
-      true ->
-         %% I think we do not have to check for message queue length of the process, because, if there were
-         %% messages still, we would see that in the handle_info callbacks
-         %% (check for any buffer in a node also)
-         %% maybe provide a callback (ie: is_idle()) for the module to make sure we really are idle, basically asking:
-         %% "is there any hidden work still to be done ?"
-         lager:notice("IDLE TIMEOUT !!!"),
-         faxe:stop_task(State#c_state.graph_id, true);
-      false ->
-         erlang:send_after(Interval, self(), check_stop_on_idle)
-   end,
-   {noreply, State};
-
-
 %%% DEBUG
 handle_info(start_debug, State = #c_state{}) ->
    NewState = cb_handle_info(start_debug, State),
@@ -433,7 +412,9 @@ handle_info({item, {Inport, Value}},
                     end;
             false -> ok
          end,
-         {noreply, reset_idle(NewState, item)}
+         %% maybe send item to stop server process
+         after_process(Value, NewState),
+         {noreply, NewState}
    end
 ;
 %% EMITTING ITEM
@@ -457,6 +438,15 @@ handle_info(stop, State=#c_state{node_id = _N, component = Mod, cb_state = CBSta
    end,
    {stop, normal, State}
 ;
+handle_info(stop_idle, State) ->
+   faxe:stop_task(State#c_state.graph_id, true),
+   {noreply, State};
+handle_info({'DOWN', _MonitorRef, process, SPid, _Info}, State = #c_state{stop_server = SPid}) ->
+   lager:notice("idle stop process is DOWN"),
+   {ok, NewServer} = flow_stop_server:start_monitor(
+      #{'_idle_time' => State#c_state.idle_time, '_stop_when' => State#c_state.idle_check_condition}
+   ),
+   {noreply, State#c_state{stop_server = NewServer}};
 
 %% Callback Module handle_info
 handle_info(Req, State = #c_state{component = Module, cb_state = CB, cb_handle_info = true}) ->
@@ -501,6 +491,8 @@ cb_handle_ack(Mode, DTag, State = #c_state{cb_state = CB, component = Module}) -
 %%--------------------------------------------------------------------
 -spec(terminate(Reason :: (normal | shutdown | {shutdown, term()} | term()),
     State :: #c_state{}) -> term()).
+terminate(_Reason, #c_state{stop_server = StopServer}) when is_pid(StopServer) ->
+   gen_server:stop(StopServer);
 terminate(_Reason, #c_state{}) ->
    ok.
 
@@ -514,22 +506,13 @@ code_change(_OldVsn, State, _Extra) ->
 %%%===================================================================
 %%% Internal functions
 %%%===================================================================
-setup_idle_stop(State, #{'_stop_idle' := StopIdle, '_idle_time' := IdleTime0}) ->
-   %% stop flow on idle feature
-   IdleTime = max(faxe_time:duration_to_ms(IdleTime0), ?MIN_IDLE_TIME),
-   IdleCheckInterval = max(round(IdleTime/5), ?MIN_IDLE_CHECK_INTERVAL),
-   case StopIdle of
-      true -> erlang:send_after(IdleCheckInterval, self(), check_stop_on_idle);
-      false -> ok
-   end,
-
-%%   lager:notice("stop on idle: ~p time: ~p interval: ~p",[StopIdle, IdleTime, IdleCheckInterval]),
+setup_idle_stop(State, #{'_stop_idle' := false}) ->
+   State;
+setup_idle_stop(State, #{'_idle_time' := IdleTime, '_stop_when' := StopCond} = Args) ->
+   {ok, Server} = flow_stop_server:start_monitor(Args),
    State#c_state{
-      %% stop_flow_on_idle feature
-      stop_on_idle = StopIdle,
-      idle_time = IdleTime,
-      idle_check_interval = IdleCheckInterval,
-      idle_since = faxe_time:now()
+      stop_server = Server, stop_on_idle = true,
+      idle_time = IdleTime, idle_check_condition = StopCond
    }.
 
 
@@ -594,9 +577,19 @@ maybe_request_items(_Port, _Pids, push) ->
 maybe_request_items(Port, Pids, pull) ->
    dataflow:request_items(Port, Pids).
 
-reset_idle(State, Tag) ->
-%%   lager:info("reset idle time <~p>",[Tag]),
-   State#c_state{idle_since = faxe_time:now()}.
+
+%%%% IDLE STOP FEATURE
+reset_idle(State = #c_state{stop_on_idle = false}, _Tag) ->
+   State;
+reset_idle(State = #c_state{stop_server = SServer}, Tag) ->
+   gen_server:cast(SServer, {data_event, Tag}),
+   State.
+
+after_process(_Item, #c_state{stop_on_idle = false}) ->
+   ok;
+after_process(Item, #c_state{stop_server = SServer}) ->
+   gen_server:cast(SServer, {new_item, Item}).
+
 %%%===================================================================
 %%% PORTS for modules
 %%%
