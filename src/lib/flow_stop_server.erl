@@ -51,7 +51,7 @@ init([#{'_idle_time' := IdleTime0, '_stop_when' := StopCond, parent := Parent}])
     false -> ok
   end,
 
-%%   lager:notice("stop on idle: ~p time: ~p interval: ~p",["yes", IdleTime, IdleCheckInterval]),
+   lager:notice("stop on idle: ~p time: ~p interval: ~p, stop-condition: ~p",["yes", IdleTime, IdleCheckInterval, StopCond]),
   {ok, #state{
     parent = Parent,
     %% stop_flow_on_idle feature
@@ -127,7 +127,9 @@ check_stop_condition([DataPoint|R], State = #state{idle_check_condition = LFun})
     case faxe_lambda:execute(DataPoint, LFun) of
         true ->
             %% activate stop idle timer
+          lager:warning("stop condtion gives TRUE!!"),
             erlang:send_after(State#state.idle_check_interval, self(), check_stop_on_idle),
             State#state{idle_check_condition = undefined};
-        false -> check_stop_condition(R, State)
+        false ->
+          check_stop_condition(R, State)
     end.
