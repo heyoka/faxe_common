@@ -45,8 +45,8 @@
    %% stop_flow_on_idle feature
    stop_on_idle = false :: true | false,
    idle_time = <<"5m">> :: non_neg_integer(),
-   idle_check_interval  :: non_neg_integer(),
-   idle_since           :: non_neg_integer()
+   idle_check_condition :: undefined | function(),
+   stop_server          :: pid()
 }).
 
 -record(data_point, {
