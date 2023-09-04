@@ -305,6 +305,13 @@ handle_call({start, Inputs, FlowMode}, _From,
 handle_call(get_subscribers, _From, State=#c_state{node_index = NodeIndex}) ->
    {reply, {ok, df_subscription:subscriptions(NodeIndex)}, State}
 ;
+handle_call(get_stats, _From, State=#c_state{component = CB, cb_state = CBState}) ->
+   Stats =
+   case erlang:function_exported(CB, get_stats, 1) of
+      true -> CB:get_stats(CBState);
+      false -> []
+   end,
+   {reply, {ok, Stats}, State};
 handle_call(_What, _From, State) ->
    lager:info("~p: unexpected handle_call with ~p",[?MODULE, _What]),
    {reply, error, State}
