@@ -397,7 +397,7 @@ handle_info({item, {Inport, Value}},
    metric(?METRIC_ITEMS_IN, 1, State),
    maybe_debug(item_in, Inport, Value, State),
 
-%%   TStart = erlang:monotonic_time(microsecond),
+   TStart = erlang:monotonic_time(microsecond),
 %%   Result = (Module:process(Inport, Value, CBState)),
    case  catch(Module:process(Inport, Value, CBState)) of
       {'EXIT', {Reason, Stacktrace}} ->
@@ -408,6 +408,8 @@ handle_info({item, {Inport, Value}},
 
       Result ->
          {NewState, Requested, REmitted} = handle_process_result(Result, State),
+         DoneInMs = round(erlang:monotonic_time(microsecond)-TStart)/1000,
+         lager:info("processing time ~pms for ~p points",[DoneInMs, item_count(Value)]),
 %%         metric(?METRIC_PROCESSING_TIME, (erlang:monotonic_time(microsecond)-TStart)/1000, State),
          case FMode == pull of
             true -> case {Requested, AR, REmitted} of
@@ -494,6 +496,11 @@ cb_handle_ack(Mode, DTag, State = #c_state{cb_state = CB, component = Module}) -
       {error, _Reason} ->
          State
    end.
+
+item_count(#data_point{}) ->
+   1;
+item_count(#data_batch{points = Ps}) ->
+   length(Ps).
 
 %%--------------------------------------------------------------------
 -spec(terminate(Reason :: (normal | shutdown | {shutdown, term()} | term()),

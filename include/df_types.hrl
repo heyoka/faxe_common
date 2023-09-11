@@ -5,6 +5,8 @@
 
 -export_type([graph_definition/0, option_name/0, option_value/0, option_config/0]).
 
+-record(faxe_lambda, {string, module, function, phash}).
+
 -type graph_definition() :: #{nodes => list(), edges => list()}.
 
 -type option_name()              :: any            |
@@ -38,7 +40,7 @@
 -type option_binary()            :: binary().
 -type option_atom()              :: atom().
 -type option_list()              :: list().
--type option_lambda()            :: fun().
+-type option_lambda()            :: #faxe_lambda{}.
 -type option_bool()              :: true | false.
 -type option_number_list()       :: list(option_number()).
 -type option_integer_list()      :: list(option_integer()).

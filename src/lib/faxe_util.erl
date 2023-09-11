@@ -94,7 +94,9 @@ check_select_statement(Q) ->
    end.
 
 %% convert a fun() to a readable string
--spec stringize_lambda(function()) -> list().
+-spec stringize_lambda(function()|#faxe_lambda{}) -> list().
+stringize_lambda(#faxe_lambda{string = String}) ->
+   String;
 stringize_lambda(Fun) when is_function(Fun) ->
    {env, [{_, _, _, Abs}]} = erlang:fun_info(Fun, env),
    Str = erl_pp:expr({'fun', 1, {clauses, Abs}}),
