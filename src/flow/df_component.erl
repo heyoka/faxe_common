@@ -408,8 +408,8 @@ handle_info({item, {Inport, Value}},
 
       Result ->
          {NewState, Requested, REmitted} = handle_process_result(Result, State),
-         DoneInMs = round(erlang:monotonic_time(microsecond)-TStart)/1000,
-         lager:info("processing time ~pms for ~p points",[DoneInMs, item_count(Value)]),
+         _DoneInMs = round(erlang:monotonic_time(microsecond)-TStart)/1000,
+%%         lager:info("processing time ~pms for ~p points",[DoneInMs, item_count(Value)]),
 %%         metric(?METRIC_PROCESSING_TIME, (erlang:monotonic_time(microsecond)-TStart)/1000, State),
          case FMode == pull of
             true -> case {Requested, AR, REmitted} of

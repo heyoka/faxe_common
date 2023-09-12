@@ -34,6 +34,7 @@ compile_and_load(#faxe_lambda{string = LambdaString, function = Name0}) ->
    lager:info("compile_and_load ~p",[Name0]),
    Name = atom_to_list(Name0),
    ModuleString = "-module("++Name++"). \n -export(["++Name++"/1]). \n" ++ LambdaString ++ "\n",
+   ets:insert(faxe_lambdas, {Name0, LambdaString}),
    {module, Name0} = dynamic_compile:load_from_string(ModuleString).
 
 
