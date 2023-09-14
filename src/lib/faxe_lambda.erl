@@ -31,7 +31,6 @@ ensure([#faxe_lambda{}|_] = Ls) ->
    [ensure(L) || L <- Ls].
 
 compile_and_load(#faxe_lambda{string = LambdaString, function = Name0}) ->
-   lager:info("compile_and_load ~p",[Name0]),
    Name = atom_to_list(Name0),
    ModuleString = "-module("++Name++"). \n -export(["++Name++"/1]). \n" ++ LambdaString ++ "\n",
    ets:insert(faxe_lambdas, {Name0, LambdaString}),
