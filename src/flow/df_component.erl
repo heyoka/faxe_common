@@ -335,6 +335,13 @@ handle_call({start, Inputs, #task_modes{run_mode = FlowMode, state_persistence =
 handle_call(get_subscribers, _From, State=#c_state{node_index = NodeIndex}) ->
    {reply, {ok, df_subscription:subscriptions(NodeIndex)}, State}
 ;
+handle_call(get_stats, _From, State=#c_state{component = CB, cb_state = CBState}) ->
+   Stats =
+   case erlang:function_exported(CB, get_stats, 1) of
+      true -> CB:get_stats(CBState);
+      false -> []
+   end,
+   {reply, {ok, Stats}, State};
 handle_call(_What, _From, State) ->
    lager:info("~p: unexpected handle_call with ~p",[?MODULE, _What]),
    {reply, error, State}
@@ -434,7 +441,7 @@ handle_info({item, {Inport, Value}},
    metric(?METRIC_ITEMS_IN, 1, State),
    maybe_debug(item_in, Inport, Value, State),
 
-%%   TStart = erlang:monotonic_time(microsecond),
+   TStart = erlang:monotonic_time(microsecond),
 %%   Result = (Module:process(Inport, Value, CBState)),
    case  catch(Module:process(Inport, Value, CBState)) of
       {'EXIT', {Reason, Stacktrace}} ->
@@ -447,6 +454,8 @@ handle_info({item, {Inport, Value}},
          {NewState, Requested, REmitted} = handle_process_result(Result, State),
          %% node state persistence
          maybe_persist(NewState),
+         _DoneInMs = round(erlang:monotonic_time(microsecond)-TStart)/1000,
+%%         lager:info("processing time ~pms for ~p points",[DoneInMs, item_count(Value)]),
 %%         metric(?METRIC_PROCESSING_TIME, (erlang:monotonic_time(microsecond)-TStart)/1000, State),
          case FMode == pull of
             true -> case {Requested, AR, REmitted} of
@@ -550,6 +559,11 @@ callback_init(CB, NodeIndex, Inputs, Opts, InitialState) ->
       false -> CB:init(NodeIndex, Inputs, Opts)
    end.
 
+
+item_count(#data_point{}) ->
+   1;
+item_count(#data_batch{points = Ps}) ->
+   length(Ps).
 
 %%--------------------------------------------------------------------
 -spec(terminate(Reason :: (normal | shutdown | {shutdown, term()} | term()),

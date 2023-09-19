@@ -6,6 +6,7 @@
    [kernel,
     stdlib,
     lager,
+    dynamic_compile,
     jiffy,
     jsn,
     msgpack,

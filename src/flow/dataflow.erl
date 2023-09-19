@@ -200,7 +200,7 @@ val(Val, {_, string_template}) when is_binary(Val) -> Val;
 val(Val, {_, list}) when is_list(Val) -> Val;
 val(Val, {_, tuple}) when is_tuple(Val) -> Val;
 val(Val, {_, atom}) when is_atom(Val) -> Val;
-val(Val, {_, lambda}) when is_function(Val) -> Val;
+val(Val, {_, lambda}) when is_record(Val, faxe_lambda) -> Val;
 val(Val, {O, boolean}) -> val(Val, {O, bool});
 val(true, {_, bool}) -> true;
 val(false, {_, bool}) -> false;
@@ -218,7 +218,7 @@ val(Val, {N, string_list}) when is_list(Val) ->
 val(Val, {N, atom_list}) when is_list(Val) ->
    list_val(Val, fun(E) -> is_atom(E) end, atoms, N);
 val(Val, {N, lambda_list}) when is_list(Val) ->
-   list_val(Val, fun(E) -> is_function(E) end, lambdas, N);
+   list_val(Val, fun(E) -> is_record(E, faxe_lambda) end, lambdas, N);
 val(Val, {N, duration_list}) when is_list(Val) ->
    list_val(Val, fun(E) -> is_duration(E) end, durations, N);
 val(Val, {N, tuple_list}) when is_list(Val) ->
