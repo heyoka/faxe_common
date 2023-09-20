@@ -330,6 +330,7 @@ handle_call({start, Inputs, #task_modes{run_mode = FlowMode, state_persistence =
          flow_mode = FlowMode,
          cb_handle_info = CallbackHandlesInfo,
          cb_handle_ack = CallbackHandlesAck,
+         persistent = StatePersistence,
          cb_formats_state = CallbackFormatsState}
    };
 handle_call(get_subscribers, _From, State=#c_state{node_index = NodeIndex}) ->
@@ -408,6 +409,7 @@ handle_info({start, Inputs, #task_modes{run_mode = FlowMode, state_persistence =
          flow_mode = FlowMode,
          cb_handle_info = CallbackHandlesInfo,
          cb_handle_ack = CallbackHandlesAck,
+         persistent = StatePersistence,
          cb_formats_state = CallbackFormatsState
       }
    }
@@ -655,6 +657,8 @@ maybe_request_items(Port, Pids, pull) ->
    dataflow:request_items(Port, Pids).
 
 
+maybe_persist(#c_state{persistent = false}) ->
+   ok;
 maybe_persist(#c_state{auto_persist = false}) ->
    ok;
 maybe_persist(#c_state{cb_state = CBState, node_index = FNId, cb_formats_state = true, component = CB}) ->

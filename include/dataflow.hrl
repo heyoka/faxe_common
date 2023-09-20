@@ -38,6 +38,7 @@
    cb_inited = false    :: true | false,
    inports              :: list(), %% list of inputs {port, pid}
    auto_request         :: none | all | emit,
+   persistent           :: true | false,
    auto_persist = false :: true | false,
    emitted = 0          :: non_neg_integer(),
    emit_debug = false   :: true | false,
