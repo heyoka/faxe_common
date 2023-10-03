@@ -523,7 +523,7 @@ code_change(_OldVsn, State, _Extra) ->
 setup_idle_stop(State, #{'_stop_idle' := false}) ->
    State;
 setup_idle_stop(State, #{'_idle_time' := IdleTime, '_stop_when' := StopCond} = Args) ->
-   {ok, Server} = flow_stop_server:start_monitor(Args),
+   {ok, Server} = flow_stop_server:start_monitor(Args#{graphId => State#c_state.graph_id, nodeId => State#c_state.node_id}),
    State#c_state{
       stop_server = Server, stop_on_idle = true,
       idle_time = IdleTime, idle_check_condition = StopCond

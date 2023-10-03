@@ -25,7 +25,7 @@
   idle_time = <<"5m">> :: non_neg_integer(),
   idle_check_interval  :: non_neg_integer(),
   idle_since           :: non_neg_integer(),
-  idle_check_condition :: undefined | function()
+  idle_check_condition :: undefined | #faxe_lambda{}
 
 }).
 
@@ -42,8 +42,9 @@ start_monitor(Args) ->
     Other -> Other
   end.
 
-init([#{'_idle_time' := IdleTime0, '_stop_when' := StopCond, parent := Parent}]) ->
+init([#{'_idle_time' := IdleTime0, '_stop_when' := StopCond, parent := Parent, graphId := GraphId, nodeId := NodeId}]) ->
   %% stop flow on idle feature
+  lager:md([{flow, GraphId}, {comp, NodeId}]),
   IdleTime = max(faxe_time:duration_to_ms(IdleTime0), ?MIN_IDLE_TIME),
   IdleCheckInterval = max(round(IdleTime/5), ?MIN_IDLE_CHECK_INTERVAL),
   case StopCond == undefined of
@@ -113,7 +114,7 @@ code_change(_OldVsn, State = #state{}, _Extra) ->
 
 
 %%%% IDLE STOP FEATURE
-reset_idle(State = #state{idle_check_condition = LFun}, _Tag) when is_function(LFun) ->
+reset_idle(State = #state{idle_check_condition = LFun}, _Tag) when is_record(LFun, faxe_lambda) ->
     State;
 reset_idle(State, _Tag) ->
     State#state{idle_since = faxe_time:now()}.
@@ -123,7 +124,7 @@ check_stop_condition(_PointList, S = #state{idle_check_condition = undefined}) -
   S;
 check_stop_condition([], S = #state{}) ->
   S;
-check_stop_condition([DataPoint|R], State = #state{idle_check_condition = LFun}) when is_function(LFun) ->
+check_stop_condition([DataPoint|R], State = #state{idle_check_condition = LFun}) when is_record(LFun, faxe_lambda) ->
     case faxe_lambda:execute(DataPoint, LFun) of
         true ->
             %% activate stop idle timer
