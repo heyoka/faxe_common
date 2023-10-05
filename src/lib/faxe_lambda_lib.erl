@@ -189,6 +189,7 @@ undefined(Val) ->
    Val == undefined.
 
 empty(undefined) -> true;
+empty(null) -> true;
 empty([]) -> true;
 empty(<<>>) -> true;
 empty(Val) when is_binary(Val) -> estr:str_strip(Val) == <<>>;
