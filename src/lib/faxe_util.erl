@@ -83,11 +83,13 @@ clean_query(QueryBin) when is_binary(QueryBin) ->
    Q = re:replace(Q0, "(\s){2,}", " ", [global, {return, binary}]),
    string:trim(Q).
 
-%% check if the given string seems to be a valid "select ... from" statement
--spec check_select_statement(binary()|list()) -> true|false.
+%% check if the given string seems to be a valid "select ... from" or "with ... select ... from" statement
+-spec check_select_statement(binary()) -> true|false.
 check_select_statement(Q) ->
    Query = clean_query(Q),
-   Pattern = "^\s?(S|s)(E|e)(L|l)(E|e)(C|c)(T|t)\s+(.*)\s+(F|f)(R|r)(O|o)(M|m)\s+(.*)",
+   %% accepting "WITH" at the beginning
+   Pattern = "^\s?((W|w)(I|i)(T|t)(H|h)\s+(.*))?(S|s)(E|e)(L|l)(E|e)(C|c)(T|t)\s+(.*)\s+(F|f)(R|r)(O|o)(M|m)\s+(.*)",
+%%   Pattern = "^\s?(S|s)(E|e)(L|l)(E|e)(C|c)(T|t)\s+(.*)\s+(F|f)(R|r)(O|o)(M|m)\s+(.*)",
    case re:run(Query, Pattern) of
       nomatch -> false;
       _ -> true
@@ -423,6 +425,49 @@ check_select_4_test() ->
       true,
       check_select_statement(Sql)
    ).
+
+check_select_with_test() ->
+   Sql = <<"with \"task\" as (
+    SELECT
+      ts as \"tsTask\",
+      {{ws_task_dbcol}}[''quantity''] as \"quantity\",
+      {{ws_task_dbcol}}[''sourceSectionName''] as \"crateName\",
+      {{ws_task_dbcol}}[''sourcelcaName''] AS \"lcaName\",
+      {{ws_task_dbcol}}[''sku''] as \"sku\"
+    FROM {{dest_schema}}.{{table}}
+    where
+      $__timefilter AND
+      {{ws_task_dbcol}}[''quantity''] > 0 AND
+      stream_id in ( {{ws_task_db_sid}} )
+    )
+
+  select
+    \"task\".\"tsTask\" as \"ts\",
+    {{crate_dbcol}}[''crateName''] as \"crateName\",
+    {{crate_dbcol}}[''lcaName''] as \"lcaName\",
+    array_max([{{crate_dbcol}}[''quantity''] - \"task\".\"quantity\", 0]) as \"quantity\",
+    if( {{crate_dbcol}}[''quantity''] - \"task\".\"quantity\" <= 0, true, false) as \"isEmpty\",
+    {{crate_dbcol}}[''sku''] as \"sku\",
+    if( {{crate_dbcol}}[''quantity''] - \"task\".\"quantity\" <= 0, ''Empty'', ''Broken'') as \"status\",
+    ''None'' as \"reason\"
+  FROM {{dest_schema}}.{{table}}, \"task\",
+    (
+    SELECT
+      max(ts) as \"tsMax\",
+      {{crate_dbcol}}[''lcaName''] as \"lcaName\"
+    FROM {{dest_schema}}.{{table}}, \"task\"
+    WHERE
+      {{crate_dbcol}}[''lcaName''] = \"task\".\"lcaName\" and
+      ts <= \"task\".\"tsTask\" and
+      stream_id in ( {{crate_db_sid}}, {{crate_input_db_sid}} )
+    GROUP By 2
+    ) as \"tsMax\"
+  where
+    {{crate_dbcol}}[''lcaName''] = \"task\".\"lcaName\" and
+    {{crate_dbcol}}[''lcaName''] = \"tsMax\".\"lcaName\" and
+    ts = \"tsMax\".\"tsMax\" and
+    stream_id in ( {{crate_db_sid}}, {{crate_input_db_sid}} )">>,
+   ?assert(check_select_statement(Sql)).
 
 ip_to_bin_test() ->
    Ip = {127, 0, 0, 1},

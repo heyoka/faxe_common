@@ -399,7 +399,7 @@ handle_info({item, {Inport, Value}},
 
    TStart = erlang:monotonic_time(microsecond),
 %%   Result = (Module:process(Inport, Value, CBState)),
-   case  catch(Module:process(Inport, Value, CBState)) of
+   case catch(Module:process(Inport, Value, CBState)) of
       {'EXIT', {Reason, Stacktrace}} ->
          lager:error("'error' in component ~p caught when processing item: ~p -- ~p",
             [State#c_state.component, {Inport, Value}, lager:pr_stacktrace(Stacktrace, {'EXIT', Reason})]),

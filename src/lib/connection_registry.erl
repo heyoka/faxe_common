@@ -35,6 +35,9 @@
   flows = []
 }).
 
+-define(STATUS_CONNECTING,    2).
+-define(STATUS_CONNECTED,     1).
+-define(STATUS_DISCONNECTED,  0).
 %%%===================================================================
 %%% Spawning and gen_server implementation
 %%%===================================================================
@@ -77,7 +80,7 @@ handle_info({connecting, Client} = _R, State) ->
     connecting ->
       ok;
     _ ->
-      out(Client, Con#conreg{connected = false, status = 2})
+      out(Client, Con#conreg{connected = false, status = ?STATUS_CONNECTING})
   end,
   {noreply, State};
 handle_info({connected, Client } = _R, State) ->
@@ -86,7 +89,7 @@ handle_info({connected, Client } = _R, State) ->
     1 ->
       ok;
     _ ->
-      out(Client, Con#conreg{connected = true, status = 1})
+      out(Client, Con#conreg{connected = true, status = ?STATUS_CONNECTED})
   end,
   {noreply, State};
 handle_info({disconnected, Client} = _R, State) ->
@@ -95,7 +98,7 @@ handle_info({disconnected, Client} = _R, State) ->
     0 ->
       ok;
     _ ->
-      out(Client, Con#conreg{connected = false, status = 0})
+      out(Client, Con#conreg{connected = false, status = ?STATUS_DISCONNECTED})
   end,
   {noreply, State};
 handle_info({'DOWN', _Mon, process, Pid, _Info}, State = #state{clients = Clients}) ->
