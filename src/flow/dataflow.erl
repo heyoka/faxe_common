@@ -145,13 +145,14 @@ build_eval(What, WhatGiven, Acc) ->
 %%====================================================================
 eval_is_set(OptName, Given, Acc) ->
    case proplists:get_value(OptName, Given) of
-      undefined  -> Acc#{OptName => false};
-      true     -> Acc#{OptName => true}
+      true     -> Acc#{OptName => true};
+      _  -> Acc#{OptName => false}
    end.
 eval_is_set(OptName, Given, Default, Acc) ->
    case proplists:get_value(OptName, Given) of
       undefined -> Acc#{OptName => Default};
-      true      -> Acc#{OptName => true}
+      true      -> Acc#{OptName => true};
+      false      -> Acc#{OptName => false}
    end.
 eval_opt(OptName, OptType, Given, Acc) ->
    case proplists:get_value(OptName, Given) of
