@@ -100,7 +100,11 @@ check_select_statement(Q) ->
 stringize_lambda(#faxe_lambda{string = String}) ->
    String;
 stringize_lambda(Fun) when is_function(Fun) ->
-   {env, [{_, _, _, Abs}]} = erlang:fun_info(Fun, env),
+   Abs =
+   case erlang:fun_info(Fun, env) of
+      {env, [{_, _, _, Abs0}]} -> Abs0;
+      {env, [{_, _, _, _, _, Abs1}]} -> Abs1
+   end,
    Str = erl_pp:expr({'fun', 1, {clauses, Abs}}),
    io_lib:format("~s~p",[lists:flatten(Str)|"\n"]).
 
