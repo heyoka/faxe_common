@@ -85,6 +85,7 @@
 
 -define(DEFAULT_FIELDS, [<<"id">>, <<"df">>, <<"ts">>]).
 -define(DEFAULT_TS_FIELD, <<"ts">>).
+-define(DTAG_FIELD, <<"dtag">>).
 
 -define(DOT_ESCAPE, <<"*">>).
 
@@ -99,8 +100,8 @@ to_json(P) when is_record(P, data_point) orelse is_record(P, data_batch) ->
 %% empty, when there is no field set (empty map)
 to_mapstruct(#data_point{ts = _Ts, fields = Fields, tags = _Tags}) when map_size(Fields) == 0 ->
    #{};
-to_mapstruct(_P=#data_point{ts = Ts, fields = Fields, tags = _Tags}) ->
-   Fields#{?DEFAULT_TS_FIELD => Ts};
+to_mapstruct(_P=#data_point{ts = Ts, fields = Fields, tags = _Tags, dtag = DTag}) ->
+   Fields#{?DEFAULT_TS_FIELD => Ts, ?DTAG_FIELD => DTag};
 to_mapstruct(_B=#data_batch{points = Points}) ->
    [to_mapstruct(P) || P <- Points].
 
@@ -170,9 +171,9 @@ point_from_json_map(Map, TimeField, TimeFormat) ->
 
 %% return a pure map representation from a data_point/data_batch, adds a timestamp as <<"ts">>
 -spec to_map(#data_point{}|#data_batch{}) -> map()|list(map()).
-to_map(#data_point{ts = Ts, fields = Fields, tags = Tags}) ->
+to_map(#data_point{ts = Ts, fields = Fields, tags = Tags, dtag = DTag}) ->
    M = maps:merge(Fields, Tags),
-   M#{<<"ts">> => Ts};
+   M#{?DEFAULT_TS_FIELD => Ts, ?DTAG_FIELD => DTag};
 to_map(#data_batch{points = Points}) ->
    [to_map(P) || P <- Points].
 
