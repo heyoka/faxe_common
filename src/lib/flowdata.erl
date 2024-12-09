@@ -157,7 +157,8 @@ point_from_json_map(Map) ->
 -spec point_from_json_map(map(), binary(), binary()) -> #data_point{}.
 point_from_json_map(Map, ?DEFAULT_TS_FIELD, ?TF_TS_MILLI) ->
    Ts = maps:get(?DEFAULT_TS_FIELD, Map, faxe_time:now()),
-   #data_point{ts = Ts, fields = maps:remove(?DEFAULT_TS_FIELD, Map)};
+   DTag = maps:get(?DTAG_FIELD, Map, undefined),
+   #data_point{ts = Ts, dtag = DTag, fields = maps:without([?DEFAULT_TS_FIELD, ?DTAG_FIELD], Map)};
 point_from_json_map(Map, TimeField, TimeFormat) ->
    Ts0 = jsn_get(TimeField, Map, undefined),
    Ts =
@@ -165,8 +166,8 @@ point_from_json_map(Map, TimeField, TimeFormat) ->
          undefined -> faxe_time:now();
          Timestamp -> time_format:convert(Timestamp, TimeFormat)
       end,
-   Fields = maps:remove(?DEFAULT_TS_FIELD, Map),
-   #data_point{ts = Ts, fields = Fields}.
+   Fields = maps:without([?DEFAULT_TS_FIELD, ?DTAG_FIELD], Map),
+   #data_point{ts = Ts, fields = Fields, dtag = maps:get(?DTAG_FIELD, Map, undefined)}.
 
 
 %% return a pure map representation from a data_point/data_batch, adds a timestamp as <<"ts">>
