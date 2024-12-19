@@ -732,7 +732,9 @@ convert_path(Path) ->
 extract_array_index(Bin) ->
    case binary:split(Bin, [<<"[">>,<<"]">>], [global, trim_all]) of
       [Bin] = Out -> Out;
-      [Part1, BinIndex] -> [Part1, binary_to_integer(BinIndex)]
+      [Part1, BinIndex] ->
+         %% we need to add +1 to the array index, jsn array indices are 1-based
+         [Part1, binary_to_integer(BinIndex)+1]
    end.
 
 %% @doc whether the given path is a root path, ie: can be set with maps:put to fields or tags

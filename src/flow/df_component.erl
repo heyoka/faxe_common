@@ -257,6 +257,7 @@ init([Component, GraphId, NodeId, Inports, _Outports, Args]) ->
 %%   lager:warning("inports: ~p" ,[Inports]),
    code:ensure_loaded(Component),
    lager:md([{flow, GraphId}, {comp, NodeId}]),
+   put(flow_name, GraphId), put(node_name, NodeId),
    InputPorts = lists:map(fun({_Pid, Port}) -> Port end, Inports),
    NId = <<GraphId/binary, "==", NodeId/binary>>,
    {ok, #c_state{
