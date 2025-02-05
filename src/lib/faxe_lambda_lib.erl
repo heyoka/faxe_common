@@ -542,15 +542,6 @@ select_all(ReturnField, [Where|Conds], Mem0, Default, Results) ->
 
 do_select(ReturnField, Where, Mem0, Default) when is_binary(ReturnField), is_list(Where) ->
    Mem = get_jsn(Mem0),
-   %% check if ReturnField is even present in Mem
-   Sel0 = jsn:select({value, ReturnField}, Mem),
-   Sel = lists:filter(fun(E) -> E /= undefined end, Sel0),
-   case Sel of
-      [] when Default == undefined ->
-         Msg = io_lib:format("Select return field '~s' does not exists in Lookup table, check your inputs.",[ReturnField]),
-         erlang:error(unicode:characters_to_list(Msg));
-      _ -> ok
-   end,
    case jsn:select({value, ReturnField, Default}, Where, Mem) of
       Res when is_list(Res) -> Res;
       undefined -> erlang:error("faxe_lambda_lib select returned undefined", [ReturnField, Where, Mem])
