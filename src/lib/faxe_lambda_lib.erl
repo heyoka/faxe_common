@@ -13,7 +13,6 @@
 -compile({no_auto_import,[map_get/2]}).
 %%% @doc
 
-
 %%% additional type checks
 is_duration(Dur) -> faxe_time:is_duration_string(Dur).
 is_boolean(In) -> is_bool(In).
@@ -425,8 +424,9 @@ select_first(ReturnField, Where, Mem) ->
    select_first(ReturnField, Where, Mem, undefined).
 select_first(ReturnField, Where, Mem, Default) ->
    case select(ReturnField, Where, Mem, Default) of
-      [undefined|_] -> erlang:error("faxe_lambda_lib:select_first returned undefined", [ReturnField, Where, Mem]);
+      [undefined|_] -> erlang:error("select_first returned undefined", [ReturnField, Where, Mem]);
       [Res|_] -> Res;
+      [] -> lager:warning("select_first with Key ~p did not match any element!", [ReturnField]), [];
       Else -> Else
    end.
 
@@ -463,16 +463,50 @@ select(ReturnField, Where0, Mem0, Default) when is_binary(ReturnField), is_list(
       CachedRes -> CachedRes
    end.
 
+select_object(Where0, Mem0) ->
+   R = select_object(Where0, Mem0, undefined),
+%%   lager:notice("select_object returns ~p",[R]),
+   R.
+select_object(Where0, Mem0, Default) ->
+   Where = prepare_conditions(Where0, []),
+   H = erlang:phash2({Where, Mem0, Default}),
+   case select_cache(H) of
+      false ->
+         Res = do_select_object(Where, Mem0),
+         catch ets:insert(select_cache, {H, Res}),
+         Res;
+      CachedRes -> CachedRes
+   end.
+
 prepare_conditions([], Acc) -> Acc;
 prepare_conditions([{_Path, _Pattern} = Cond|Conditions], Acc) ->
    prepare_conditions(Conditions, Acc ++ [Cond]);
+prepare_conditions([{<<"any_path">>, Paths, Val}|Conditions], Acc) ->
+   prepare_conditions(Conditions, prepare_any_cond_fun(Paths, Val, Acc));
 prepare_conditions([{<<"regex">>, Path, Pattern}|Conditions], Acc) ->
-   prepare_conditions(Conditions, prepare_cond_fun(Path, Pattern, Acc));
+   prepare_conditions(Conditions, prepare_re_cond_fun(Path, Pattern, Acc));
 prepare_conditions([{regex, Path, Pattern}|Conditions], Acc) ->
-   prepare_conditions(Conditions, prepare_cond_fun(Path, Pattern, Acc)).
+   prepare_conditions(Conditions, prepare_re_cond_fun(Path, Pattern, Acc)).
 
+prepare_any_cond_fun(PathList, Value, Acc) ->
+   CondFun =
+      fun(Object) ->
+         try
+            Vals = jsn:get_list(PathList, Object),
+            FilteredList = lists:filter(fun(V) -> not lists:member(V, [undefined, [], <<>>]) end, Vals),
+            case FilteredList of
+               [] -> false;
+               L  -> lists:member(Value, FilteredList)
+            end
+         catch
+            C:R:S ->
+               Message = erl_error:format_exception(C, R, S, #{stack_trim_fun => fun(_, _, _) -> false end}),
+               throw(unicode:characters_to_list(Message))
+         end
+      end,
+   Acc ++ [CondFun].
 
-prepare_cond_fun(Path, Pattern, Acc) ->
+prepare_re_cond_fun(Path, Pattern, Acc) ->
    CondFun =
       fun(Val) ->
          try re:run(Val, Pattern, []) of
@@ -508,11 +542,32 @@ select_all(ReturnField, [Where|Conds], Mem0, Default, Results) ->
 
 do_select(ReturnField, Where, Mem0, Default) when is_binary(ReturnField), is_list(Where) ->
    Mem = get_jsn(Mem0),
+   %% check if ReturnField is even present in Mem
+   Sel0 = jsn:select({value, ReturnField}, Mem),
+   Sel = lists:filter(fun(E) -> E /= undefined end, Sel0),
+   case Sel of
+      [] when Default == undefined ->
+         Msg = io_lib:format("Select return field '~s' does not exists in Lookup table, check your inputs.",[ReturnField]),
+         erlang:error(unicode:characters_to_list(Msg));
+      _ -> ok
+   end,
    case jsn:select({value, ReturnField, Default}, Where, Mem) of
       Res when is_list(Res) -> Res;
       undefined -> erlang:error("faxe_lambda_lib select returned undefined", [ReturnField, Where, Mem])
-   end.
+   end;
+do_select(ReturnField, Where, Mem0, Default) ->
+   erlang:error("faxe_lambda_lib select cannot produce result, check you input!", [ReturnField, Where, Mem0, Default]).
 
+do_select_object(Where, Mem0) when is_list(Where) ->
+   Mem = get_jsn(Mem0),
+   case jsn:select(identity, Where, Mem) of
+      [Res] when is_map(Res) -> Res;
+      [] -> erlang:error("select_object did not return a valid object, pls check your input", [Where, Mem]);
+      Other -> erlang:error("select_object did not match exactly one object/map, pls check your input",[Other, Where, Mem]);
+      undefined -> erlang:error("faxe_lambda_lib select returned undefined", [Where, Mem])
+   end;
+do_select_object(Where, Mem0) ->
+   erlang:error("faxe_lambda_lib select cannot produce result, check you input!", [Where, Mem0]).
 
 select_cache(H) ->
    case catch lookup_select(H) of
