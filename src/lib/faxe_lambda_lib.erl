@@ -426,7 +426,7 @@ select_first(ReturnField, Where, Mem, Default) ->
    case select(ReturnField, Where, Mem, Default) of
       [undefined|_] -> erlang:error("select_first returned undefined", [ReturnField, Where, Mem]);
       [Res|_] -> Res;
-      [] -> lager:warning("select_first with Key ~p did not match any element!", [ReturnField]), [];
+      [] -> lager:notice("select_first with Key ~p did not match any element!", [ReturnField]), [];
       Else -> Else
    end.
 
