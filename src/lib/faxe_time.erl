@@ -365,10 +365,7 @@ ms(Ts) ->
    Micro1 = MicroTs rem 1000000,
    Micro1 div 1000 rem 1000.
 
-mod(X,Y) -> r_mod(X, Y).
-r_mod(X,Y) when X > 0 -> X rem Y;
-r_mod(X,Y) when X < 0 -> Y + X rem Y;
-r_mod(0,_Y) -> 0.
+mod(X,Y) -> faxe_util:mod(X,Y).
 
 interval(V) when is_integer(V) andalso V /= 0 -> V;
 interval(_) -> 1.

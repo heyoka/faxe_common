@@ -8,7 +8,8 @@
 
 -behaviour(gen_server).
 
--export([start_link/0, connected/0, disconnected/0, connecting/0, reg/4, get_connection/1, get_connection_msgs/1]).
+-export([start_link/0, connected/0, disconnected/0, connecting/0, reg/4,
+  get_connection/1, get_connection_msgs/1, disconnected_ok/0]).
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2, terminate/2,
   code_change/3]).
 
@@ -35,9 +36,10 @@
   flows = []
 }).
 
--define(STATUS_CONNECTING,    2).
--define(STATUS_CONNECTED,     1).
--define(STATUS_DISCONNECTED,  0).
+-define(STATUS_DISCONNECTED_OK,   3).
+-define(STATUS_CONNECTING,        2).
+-define(STATUS_CONNECTED,         1).
+-define(STATUS_DISCONNECTED,      0).
 %%%===================================================================
 %%% Spawning and gen_server implementation
 %%%===================================================================
@@ -52,6 +54,9 @@ connected() ->
 
 disconnected() ->
   ?SERVER ! {disconnected, self()}.
+
+disconnected_ok() ->
+  ?SERVER ! {disconnected_ok, self()}.
 
 start_link() ->
   gen_server:start_link({local, ?SERVER}, ?MODULE, [], []).
@@ -75,31 +80,16 @@ handle_info({reg, Client, {FlowId, NodeId} = _Id, Peer, Port, Type} = _R, State=
   write(Client, #conreg{peer = Peer1, port = Port, flowid = FlowId, nodeid = NodeId, conn_type = Type}),
   {noreply, State#state{clients = [Client|Clients]}};
 handle_info({connecting, Client} = _R, State) ->
-  Con = get_connection(Client),
-  case Con#conreg.status of
-    connecting ->
-      ok;
-    _ ->
-      out(Client, Con#conreg{connected = false, status = ?STATUS_CONNECTING})
-  end,
+  maybe_new_status(?STATUS_CONNECTING, Client),
   {noreply, State};
 handle_info({connected, Client } = _R, State) ->
-  Con = get_connection(Client),
-  case Con#conreg.status of
-    1 ->
-      ok;
-    _ ->
-      out(Client, Con#conreg{connected = true, status = ?STATUS_CONNECTED})
-  end,
+  maybe_new_status(?STATUS_CONNECTED, Client),
   {noreply, State};
 handle_info({disconnected, Client} = _R, State) ->
-  Con = get_connection(Client),
-  case Con#conreg.status of
-    0 ->
-      ok;
-    _ ->
-      out(Client, Con#conreg{connected = false, status = ?STATUS_DISCONNECTED})
-  end,
+  maybe_new_status(?STATUS_DISCONNECTED, Client),
+  {noreply, State};
+handle_info({disconnected_ok, Client} = _R, State) ->
+  maybe_new_status(?STATUS_DISCONNECTED_OK, Client),
   {noreply, State};
 handle_info({'DOWN', _Mon, process, Pid, _Info}, State = #state{clients = Clients}) ->
   case lists:member(Pid, Clients) of
@@ -123,6 +113,16 @@ code_change(_OldVsn, State = #state{}, _Extra) ->
 %%%===================================================================
 %%% Internal functions
 %%%===================================================================
+maybe_new_status(NewStatus, Client) ->
+  Con = get_connection(Client),
+  case Con#conreg.status of
+    NewStatus -> ok;
+    _ -> out(Client, Con#conreg{connected = con_from_status(NewStatus), status = NewStatus})
+  end.
+
+con_from_status(?STATUS_CONNECTED) -> true;
+con_from_status(_) -> false.
+
 
 -spec get_connection(pid()) -> #conreg{}.
 get_connection(Pid) ->

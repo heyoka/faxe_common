@@ -26,7 +26,7 @@
    bytes/1, to_num/1, save_binary_to_atom/1,
    to_rkey/1, random_latin_binary/2, random_latin_binary/1,
    type/1, to_list/1,
-   check_mqtt_topic/1, check_publisher_mqtt_topic/1]).
+   check_mqtt_topic/1, check_publisher_mqtt_topic/1, mod/2]).
 
 -define(HTTP_PROTOCOL, <<"http://">>).
 
@@ -277,6 +277,15 @@ to_rkey(List) when is_list(List) ->
    [to_rkey(E) || E <- List];
 to_rkey(Other) ->
    Other.
+
+%% erlang modulo
+mod(X,Y) -> r_mod(X, Y).
+r_mod(X,Y) when X > 0 -> X rem Y;
+r_mod(X,Y) when X < 0 -> Y + X rem Y;
+r_mod(0,_Y) -> 0.
+
+
+
 
 %% Levenshtein code by Adam Lindberg, Fredrik Svensson via
 %% http://www.trapexit.org/String_similar_to_(Levenshtein)
