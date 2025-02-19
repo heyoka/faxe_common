@@ -13,11 +13,12 @@
 -compile({no_auto_import,[map_get/2]}).
 %%% @doc
 
+%% given a json list with plc db address information, build addresses to use in a s7_read node
 build_plc_addresses(JsnList) ->
    L = get_jsn(JsnList),
-   R = s7_utils:build_spot_addresses(L),
-   lager:notice("SPOT PLC: ~p",[R]),
-   R.
+   s7_utils:build_spot_addresses(L).
+
+
 %%% additional type checks
 is_duration(Dur) -> faxe_time:is_duration_string(Dur).
 is_boolean(In) -> is_bool(In).
