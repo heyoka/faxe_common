@@ -16,7 +16,10 @@
 %% given a json list with plc db address information, build addresses to use in a s7_read node
 build_plc_addresses(JsnList) ->
    L = get_jsn(JsnList),
-   s7_utils:build_spot_addresses(L).
+   s7_utils:build_plc_addresses(L).
+build_plc_addresses(JsnList, FieldName) ->
+   L = get_jsn(JsnList),
+   to_json_string(s7_utils:build_plc_addresses(L, FieldName)).
 
 
 %%% additional type checks
