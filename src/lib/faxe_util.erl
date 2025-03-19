@@ -202,6 +202,10 @@ build_topic(Parts, Separator) when is_list(Parts) andalso is_binary(Separator) -
 
 
 -spec check_mqtt_topic(binary()) -> true | {false, binary()}.
+check_mqtt_topic(<<>>) ->
+   {false, <<"topic is empty">>};
+check_mqtt_topic(<<"\"\"">>) ->
+   {false, <<"topic is empty">>};
 check_mqtt_topic(<<"/", _R/binary>>) ->
    {false, <<"topic must not start with '/'">>};
 check_mqtt_topic(<<"$", _R/binary>>) ->
@@ -216,9 +220,9 @@ check_mqtt_topic(T) when is_binary(T) ->
 check_publisher_mqtt_topic(T) when is_binary(T) ->
    case check_mqtt_topic(T) of
       true ->
-         case binary:match(T, [<<"#">>, <<"+">>]) of
+         case binary:match(T, [<<"#">>, <<"+">>, <<"*">>]) of
             nomatch -> true;
-            _ -> {false, <<"topic must not contain '#' or '+'">>}
+            _ -> {false, <<"topic must not contain '#', '+', '*'">>}
          end;
       O -> O
    end.

@@ -208,7 +208,7 @@ empty(_) -> false.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% additional string functions
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
+%% index is 1-based (lists:nth)
 topic_part(Topic, Index) when is_binary(Topic), is_integer(Index) ->
    topic_part(Topic, Index, <<"/">>).
 topic_part(Topic, Index, Separator) when is_binary(Topic), is_binary(Separator), is_integer(Index) ->
@@ -634,9 +634,11 @@ mem_lookup(Key) ->
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 flow_name() ->
-   get(flow_name).
+   norm(get(flow_name)).
 node_name() ->
-   get(node_name).
+   norm(get(node_name)).
+norm(undefined) -> <<"na">>;
+norm(Bin) -> Bin.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%% side load
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
