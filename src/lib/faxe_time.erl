@@ -61,7 +61,7 @@
    timer_start/2,
    timer_next/1,
    timer_cancel/1
-   , timer_now/1, init_timer/3, timer_new/3, is_timestamp/1]).
+   , timer_now/1, init_timer/3, timer_new/3, is_timestamp/1, ms_to_sec_duration/1]).
 
 %%% @doc
 %%% get "now" in milliseconds,
@@ -122,6 +122,14 @@ duration_to_ms(UnitBin) when is_binary(UnitBin) ->
    duration_to_ms(binary_to_duration(UnitBin));
 duration_to_ms({TUnit, Int}) ->
    unit_to_ms(TUnit) * Int.
+
+
+%% @doc convert a millisecond duration value to a duration string in seconds
+%% @param millisecond integer value
+%% @returns duration string in seconds
+-spec ms_to_sec_duration(Ms :: non_neg_integer()) -> binary().
+ms_to_sec_duration(Ms) when is_integer(Ms), Ms > -1 ->
+   << (integer_to_binary(erlang:trunc(Ms/1000)))/binary, "s">>.
 
 %% @doc
 %% add a duration to given ms-timestamp,

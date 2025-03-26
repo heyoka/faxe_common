@@ -320,6 +320,11 @@ time_align(Ts, DurationUnit) when is_integer(Ts), is_binary(DurationUnit) ->
 from_duration(Dur) ->
    faxe_time:duration_to_ms(Dur).
 
+to_duration_sec(Ms) when is_integer(Ms) ->
+   faxe_time:ms_to_sec_duration(Ms);
+to_duration_sec(_) ->
+   throw("non integer value given to to_duration_sec!").
+
 -spec millisecond(non_neg_integer()) -> non_neg_integer().
 millisecond(Ts) ->
    faxe_time:get(millisecond, Ts).
