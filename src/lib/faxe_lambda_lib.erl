@@ -510,7 +510,7 @@ prepare_any_cond_fun(PathList, Value, Acc) ->
             FilteredList = lists:filter(fun(V) -> not lists:member(V, [undefined, [], <<>>]) end, Vals),
             case FilteredList of
                [] -> false;
-               L  -> lists:member(Value, FilteredList)
+               _L  -> lists:member(Value, FilteredList)
             end
          catch
             C:R:S ->
@@ -568,8 +568,8 @@ do_select_object(Where, Mem0) when is_list(Where) ->
    case jsn:select(identity, Where, Mem) of
       [Res] when is_map(Res) -> Res;
       [] -> erlang:error("select_object did not return a valid object, pls check your input", [Where, Mem]);
-      Other -> erlang:error("select_object did not match exactly one object/map, pls check your input",[Other, Where, Mem]);
-      undefined -> erlang:error("faxe_lambda_lib select returned undefined", [Where, Mem])
+      undefined -> erlang:error("faxe_lambda_lib select returned undefined", [Where, Mem]);
+      Other -> erlang:error("select_object did not match exactly one object/map, pls check your input",[Other, Where, Mem])
    end;
 do_select_object(Where, Mem0) ->
    erlang:error("faxe_lambda_lib select cannot produce result, check you input!", [Where, Mem0]).
