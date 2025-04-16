@@ -498,10 +498,10 @@ cb_handle_ack(Mode, DTag, State = #c_state{cb_state = CB, component = Module}) -
          State
    end.
 
-item_count(#data_point{}) ->
-   1;
-item_count(#data_batch{points = Ps}) ->
-   length(Ps).
+%%item_count(#data_point{}) ->
+%%   1;
+%%item_count(#data_batch{points = Ps}) ->
+%%   length(Ps).
 
 %%--------------------------------------------------------------------
 -spec(terminate(Reason :: (normal | shutdown | {shutdown, term()} | term()),

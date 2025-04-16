@@ -75,7 +75,7 @@ kurtosis(Data) when is_list(Data) ->
    A = average(Data),
    C = length(Data),
    Std = stdev_sample(Data),
-   case Std =:= 0.0 of
+   case Std =:= +0.0 of
       true -> 0.0;
       false ->
          Mult = ((C) * (C+1)) / ((C-1) * (C -2) * (C - 3)),

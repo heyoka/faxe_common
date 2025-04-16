@@ -143,7 +143,7 @@ get_connection(Pid, Strict) ->
 get_connection_msgs(Pids) when is_list(Pids) ->
   Conns0 = [get_connection(Pid, true) || Pid <- Pids],
   Conns = [C || C <- Conns0, C /= undefined],
-  [build_datapoint(Conn) || Conn=#conreg{flowid = FId, nodeid = NId} <- Conns].
+  [build_datapoint(Conn) || Conn=#conreg{} <- Conns].
 
 
 remove_node_entries(Pid) ->

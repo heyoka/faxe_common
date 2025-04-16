@@ -328,7 +328,7 @@ tss_fields(B=#data_batch{}, Paths, true) when is_list(Paths) ->
 tss_fields(#data_batch{points = Points}, Path, true) ->
    lists:foldl(
      fun
-        (#data_point{ts = Ts, fields = F=#{Path := Val}}, {Tss, Vals}) ->
+        (#data_point{ts = Ts, fields = #{Path := Val}}, {Tss, Vals}) ->
            {Tss++[Ts], Vals++[Val]};
         (_, Acc) ->
            Acc
