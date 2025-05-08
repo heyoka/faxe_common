@@ -26,7 +26,7 @@
    bytes/1, to_num/1, save_binary_to_atom/1,
    to_rkey/1, random_latin_binary/2, random_latin_binary/1,
    type/1, to_list/1,
-   check_mqtt_topic/1, check_publisher_mqtt_topic/1, mod/2]).
+   check_mqtt_topic/1, check_publisher_mqtt_topic/1, mod/2, subtopic/2]).
 
 -define(HTTP_PROTOCOL, <<"http://">>).
 
@@ -199,6 +199,15 @@ build_topic(Parts, Separator) when is_list(Parts) andalso is_binary(Separator) -
          ), Separator, <<>>)
       || P <- PartsBin, P /= Separator],
    iolist_to_binary(lists:join(Separator, PartsClean)).
+
+
+%% @doc get the first Depth parts of the given mqtt_topic
+%% @param Topic an mqtt topic string (binary)
+%% @param Depth starting from 1, how many parts of the given topic to return
+%% @returns subtopic binary
+subtopic(Topic, Depth) when is_binary(Topic), is_integer(Depth) ->
+   TopicParts = lists:sublist(string:lexemes(Topic, "/"), Depth),
+   build_topic(TopicParts).
 
 
 -spec check_mqtt_topic(binary()) -> true | {false, binary()}.
