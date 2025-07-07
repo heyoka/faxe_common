@@ -29,6 +29,8 @@ is_bool(In) when In == true orelse In == false -> true;
 is_bool(_) -> false.
 is_int(In) -> erlang:is_integer(In).
 
+new_map() -> maps:new().
+
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% string functions
@@ -427,7 +429,9 @@ map_get(Key, Map) ->
 map_get(Key, JBin, Default) when is_binary(JBin) ->
    maps:get(Key, get_jsn(JBin), Default);
 map_get(Key, Map, Default) when is_map(Map) ->
-   maps:get(Key, Map, Default).
+   maps:get(Key, Map, Default);
+map_get(_, _, Default) ->
+   Default.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% json arrays
@@ -635,7 +639,8 @@ mem_lookup(Key) ->
       Res
    end.
 
-
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+device_name() -> faxe_util:get_device_name().
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
