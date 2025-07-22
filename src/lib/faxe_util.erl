@@ -45,7 +45,8 @@ uuid_string() ->
 %% @doc round a floating point number with a given precision
 -spec round_float(float(), non_neg_integer()) -> float().
 round_float(Float, Precision) when is_float(Float), is_integer(Precision) ->
-   list_to_float(io_lib:format("~.*f",[Precision, Float])).
+%%   list_to_float(io_lib:format("~.*f",[Precision, Float])).
+   list_to_float(float_to_list(Float, [compact, {decimals, Precision}])).
 
 %% @doc get the decimal part of a float as an integer
 %% note that rounding occurs if there are more decimals in the float than given by the parameter
